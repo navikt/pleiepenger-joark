@@ -14,8 +14,10 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.journalforing.api.JournalforingResponse
+import no.nav.helse.journalforing.api.ManglerCorrelationId
 import no.nav.helse.journalforing.v1.DokumentV1
 import no.nav.helse.journalforing.v1.MeldingV1
+import no.nav.helse.validering.Valideringsfeil
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.slf4j.Logger
@@ -130,13 +132,96 @@ class PleiepengerJoarkTest {
         )
     }
 
+    @Test(expected = ManglerCorrelationId::class)
+    fun `melding uten correlation id skal feile`() {
+
+        val request = MeldingV1(
+            aktoerId = "12345",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                DokumentV1(
+                    tittel = "Hoveddokument",
+                    innhold = "test.pdf".fromResources(),
+                    contentType = "application/pdf"
+                )
+            )
+        )
+
+        requestAndAssert(
+            request = request,
+            leggTilCorrelationId = false
+        )
+    }
+
+    @Test(expected = Valideringsfeil::class)
+    fun `ugyldig aktoerID skal feile`() {
+        val request = MeldingV1(
+            aktoerId = "",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                DokumentV1(
+                    tittel = "Hoveddokument",
+                    innhold = "test.pdf".fromResources(),
+                    contentType = "application/pdf"
+                )
+            )
+        )
+
+        requestAndAssert(
+            request = request
+        )
+    }
+
+    @Test(expected = Valideringsfeil::class)
+    fun `melding maa inneholde minst et dokument`() {
+        val request = MeldingV1(
+            aktoerId = "123456",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf()
+        )
+
+        requestAndAssert(
+            request = request
+        )
+    }
+
+    @Test(expected = Valideringsfeil::class)
+    fun `melding med ikke stoettet format paa et vedlegg`() {
+        val request = MeldingV1(
+            aktoerId = "123456",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                DokumentV1(
+                    tittel = "Hoveddokument",
+                    innhold = "test.pdf".fromResources(),
+                    contentType = "application/pdf"
+                ),
+                DokumentV1(
+                    tittel = "Hoveddokument",
+                    innhold = "test.pdf".fromResources(),
+                    contentType = "application/json"
+                )
+            )
+        )
+        requestAndAssert(
+            request = request
+        )
+    }
+
     private fun requestAndAssert(request : MeldingV1,
                                  expectedResponse : JournalforingResponse? = null,
-                                 expectedCode : HttpStatusCode? = null) {
+                                 expectedCode : HttpStatusCode? = null,
+                                 leggTilCorrelationId : Boolean = true) {
         with(engine) {
             handleRequest(HttpMethod.Post, "/v1/journalforing") {
                 addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                addHeader(HttpHeaders.XCorrelationId, "123156")
+                if (leggTilCorrelationId) {
+                    addHeader(HttpHeaders.XCorrelationId, "123156")
+                }
                 addHeader(HttpHeaders.ContentType, "application/json")
                 setBody(objectMapper.writeValueAsString(request))
             }.apply {

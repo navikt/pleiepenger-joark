@@ -17,6 +17,7 @@ private val GOSYS_FAGSYSTEM = FagSystem("GOSYS","FS22")
 private val JOURNALFORING_TITTEL = "Søknad om pleiepenger – sykt barn - NAV 09-11.05"
 
 private val SUPPORTERTE_CONTENT_TYPES = listOf(ContentType("application","pdf"))
+private val ONLY_DIGITS = Regex("\\d+")
 
 class JournalforingV1Service(
     private val journalforingGateway : JournalforingGateway
@@ -54,6 +55,9 @@ class JournalforingV1Service(
             if (!SUPPORTERTE_CONTENT_TYPES.contains(dokument.contentTypeObject)) {
                 brudd.add(Brudd(parameter = "dokument", error = "Content-Type '${dokument.contentType}' støttes ikke."))
             }
+        }
+        if (!melding.aktoerId.matches(ONLY_DIGITS)) {
+            brudd.add(Brudd("aktoer_id", error = "${melding.aktoerId} er ikke en gyldig AktørID. Kan kun være siffer."))
         }
         if (brudd.isNotEmpty()) {
             throw Valideringsfeil(brudd)
