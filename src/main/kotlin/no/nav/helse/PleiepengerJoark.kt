@@ -112,16 +112,17 @@ fun Application.pleiepengerJoark() {
 
     install(Routing) {
         authenticate {
-            journalforingApis(
-                journalforingV1Service = JournalforingV1Service(
-                    journalforingGateway = JournalforingGateway(
-                        httpClient = joarkHttpClient,
-                        joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
-                        systembrukerService = systembrukerService
-                    )
+
+        }
+        journalforingApis(
+            journalforingV1Service = JournalforingV1Service(
+                journalforingGateway = JournalforingGateway(
+                    httpClient = joarkHttpClient,
+                    joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
+                    systembrukerService = systembrukerService
                 )
             )
-        }
+        )
         monitoring(
             collectorRegistry = collectorRegistry
         )

@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration
 import com.github.tomakehurst.wiremock.extension.Extension
+import com.github.tomakehurst.wiremock.matching.ContainsPattern
 import no.nav.security.oidc.test.support.JwkGenerator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -39,7 +40,6 @@ object WiremockWrapper {
         wireMockServer.start()
         WireMock.configureFor(wireMockServer.port())
 
-        stubJoark()
         stubGetSystembrukerToken()
         stubJwkSet()
 
@@ -49,9 +49,13 @@ object WiremockWrapper {
         return wireMockServer
     }
 
-    private fun stubJoark() {
+    fun stubJoarkOk(sakId: String,
+                    tilstand: String) {
         WireMock.stubFor(
             WireMock.post(WireMock.urlMatching(".*$joarkInngaaendeForsendelsePath"))
+                .withRequestBody(ContainsPattern("""
+                    "arkivSakId" : "$sakId"
+                    """.trimIndent()))
                 .willReturn(
                     WireMock.aResponse()
                         .withStatus(200)
@@ -59,7 +63,7 @@ object WiremockWrapper {
                         .withBody("""
                             {
                                 "journalpostId": "1234",
-                                "journalTilstand": "ENDELIG_JOURNALFOERT"
+                                "journalTilstand": "$tilstand"
                             }
                         """.trimIndent())
                 )

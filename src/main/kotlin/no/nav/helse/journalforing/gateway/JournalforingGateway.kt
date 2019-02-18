@@ -50,7 +50,7 @@ class JournalforingGateway(
         )
 
         if (request.forsokEndeligJF && JournalTilstand.ENDELIG_JOURNALFOERT != journalTilstandFraString(response.journalTilstand)) {
-            throw IllegalStateException("Journalføring '%$response' var forventet å bli endelig journalført, men ble det ikke..")
+            throw IllegalStateException("Journalføring '$response' var forventet å bli endelig journalført, men ble det ikke..")
         } else {
             return response
         }

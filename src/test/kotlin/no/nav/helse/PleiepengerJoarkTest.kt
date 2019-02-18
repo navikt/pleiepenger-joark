@@ -31,8 +31,9 @@ class PleiepengerJoarkTest {
     @KtorExperimentalAPI
     private companion object {
 
-        val wireMockServer: WireMockServer = WiremockWrapper.bootstrap()
-        val objectMapper = ObjectMapper.server()
+        private val wireMockServer: WireMockServer = WiremockWrapper.bootstrap()
+        private val objectMapper = ObjectMapper.server()
+        private val accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
 
         fun getConfig() : ApplicationConfig {
             val fileConfig = ConfigFactory.load()
@@ -79,12 +80,14 @@ class PleiepengerJoarkTest {
     }
 
     @Test
-    fun `gyldig melding til joark gir ok response med jorunalpost ID`() {
-        val accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
+    fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
+        val sakId =  "5678"
+
+        WiremockWrapper.stubJoarkOk(sakId = sakId, tilstand = "ENDELIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "1234",
-            sakId = "5678",
+            sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
                 DokumentV1(
@@ -96,6 +99,40 @@ class PleiepengerJoarkTest {
         )
         val expectedResponse = JournalforingResponse(journalPostId = "1234")
 
+        requestAndAssert(
+            request = request,
+            expectedResponse = expectedResponse,
+            expectedCode = HttpStatusCode.Created
+        )
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun `gyldig melding til joark som kun blir midlertidig jorunalfoert gir feil`() {
+        val sakId =  "56789"
+
+        WiremockWrapper.stubJoarkOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
+
+        val request = MeldingV1(
+            aktoerId = "12345",
+            sakId = sakId,
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                DokumentV1(
+                    tittel = "Hoveddokument",
+                    innhold = "test.pdf".fromResources(),
+                    contentType = "application/pdf"
+                )
+            )
+        )
+
+        requestAndAssert(
+            request = request
+        )
+    }
+
+    private fun requestAndAssert(request : MeldingV1,
+                                 expectedResponse : JournalforingResponse? = null,
+                                 expectedCode : HttpStatusCode? = null) {
         with(engine) {
             handleRequest(HttpMethod.Post, "/v1/journalforing") {
                 addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
@@ -103,7 +140,7 @@ class PleiepengerJoarkTest {
                 addHeader(HttpHeaders.ContentType, "application/json")
                 setBody(objectMapper.writeValueAsString(request))
             }.apply {
-                assertEquals(HttpStatusCode.Created, response.status())
+                assertEquals(expectedCode, response.status())
                 assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
             }
         }
