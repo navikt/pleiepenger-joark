@@ -103,7 +103,7 @@ class PleiepengerJoarkTest {
                 addHeader(HttpHeaders.ContentType, "application/json")
                 setBody(objectMapper.writeValueAsString(request))
             }.apply {
-                assertEquals(HttpStatusCode.OK, response.status())
+                assertEquals(HttpStatusCode.Created, response.status())
                 assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
             }
         }
