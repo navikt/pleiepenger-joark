@@ -36,6 +36,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 
 private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoark")
+private const val GENERATED_REQUEST_ID_PREFIX = "generated-"
 
 fun main(args: Array<String>): Unit  = io.ktor.server.netty.EngineMain.main(args)
 
@@ -139,7 +140,7 @@ fun Application.pleiepengerJoark() {
     install(CallLogging) {
         callIdMdc("correlation_id")
         mdc("request_id") { call ->
-            val requestId = call.request.header(HttpHeaders.XRequestId) ?: "generated-${UUID.randomUUID()}"
+            val requestId = call.request.header(HttpHeaders.XRequestId)?.removePrefix(GENERATED_REQUEST_ID_PREFIX) ?: "$GENERATED_REQUEST_ID_PREFIX)${UUID.randomUUID()}"
             call.response.header(HttpHeaders.XRequestId, requestId)
             requestId
         }
