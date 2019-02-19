@@ -1,6 +1,7 @@
 package no.nav.helse.dokument
 
 import io.ktor.http.ContentType
+import java.net.URL
 
 class StaticDokumentService : DokumentService {
 
@@ -17,7 +18,7 @@ class StaticDokumentService : DokumentService {
         )
     )
 
-    override fun hentDokumenter(paths: List<String>): List<Dokument> {
+    override fun hentDokumenter(urls: List<URL>): List<Dokument> {
         return staticDocumenter
     }
 

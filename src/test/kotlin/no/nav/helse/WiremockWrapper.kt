@@ -14,6 +14,8 @@ private const val jwkSetPath = "/auth-mock/jwk-set"
 private const val tokenPath = "/auth-mock/token"
 private const val getAccessTokenPath = "/auth-mock/get-test-access-token"
 private const val joarkInngaaendeForsendelsePath = "/joark-mock/rest/mottaInngaaendeForsendelse"
+private const val pleiepengerDokumentPath = "/pleiepenger-dokument-mock"
+
 private const val subject = "srvpleiepenger-sak"
 
 
@@ -118,6 +120,10 @@ fun WireMockServer.getTokenUrl() : String {
 
 fun WireMockServer.getJoarkInngaaendeForsendelseUrl() : String {
     return baseUrl() + joarkInngaaendeForsendelsePath
+}
+
+fun WireMockServer.getPleiepengerDokumentUrl() : String {
+    return baseUrl() + pleiepengerDokumentPath
 }
 
 fun WireMockServer.getSubject() : String {

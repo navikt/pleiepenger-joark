@@ -1,5 +1,7 @@
 package no.nav.helse.dokument
 
+import java.net.URL
+
 interface DokumentService {
-    fun hentDokumenter(paths: List<String>) : List<Dokument>
+    fun hentDokumenter(urls: List<URL>) : List<Dokument>
 }

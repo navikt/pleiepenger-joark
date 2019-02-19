@@ -21,6 +21,7 @@ import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.net.URL
 import java.time.ZonedDateTime
 import kotlin.test.*
 
@@ -91,8 +92,8 @@ class PleiepengerJoarkTest {
             sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                "/dokument/123",
-                "/dokument/234"
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
             )
         )
         val expectedResponse = JournalforingResponse(journalPostId = "1234")
@@ -115,8 +116,8 @@ class PleiepengerJoarkTest {
             sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                "/dokument/123",
-                "/dokument/234"
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
             )
         )
 
@@ -133,8 +134,8 @@ class PleiepengerJoarkTest {
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                "/dokument/123",
-                "/dokument/234"
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
             )
         )
 
@@ -151,8 +152,8 @@ class PleiepengerJoarkTest {
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                "/dokument/123",
-                "/dokument/234"
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
             )
         )
 
@@ -173,6 +174,10 @@ class PleiepengerJoarkTest {
         requestAndAssert(
             request = request
         )
+    }
+
+    private fun getDokumentUrl(dokumentId : String) : URL{
+        return URL("${wireMockServer.getPleiepengerDokumentUrl()}/$dokumentId")
     }
 
     private fun requestAndAssert(request : MeldingV1,
