@@ -81,12 +81,12 @@ fun Application.pleiepengerJoark() {
             verifier(jwkProvider, configuration.getIssuer())
             realm = "pleiepenger-joark"
             validate { credentials ->
-                log.info("authorization attempt for ${credentials.payload.subject}")
+                logger.info("authorization attempt for ${credentials.payload.subject}")
                 if (credentials.payload.subject in authorizedSystems) {
-                    log.info("authorization ok")
+                    logger.info("authorization ok")
                     return@validate JWTPrincipal(credentials.payload)
                 }
-                log.warn("authorization failed")
+                logger.warn("authorization failed")
                 return@validate null
             }
         }
@@ -116,18 +116,17 @@ fun Application.pleiepengerJoark() {
 
     install(Routing) {
         authenticate {
-
-        }
-        journalforingApis(
-            journalforingV1Service = JournalforingV1Service(
-                journalforingGateway = JournalforingGateway(
-                    httpClient = joarkHttpClient,
-                    joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
-                    systembrukerService = systembrukerService
-                ),
-                dokumentService = StaticDokumentService()
+            journalforingApis(
+                journalforingV1Service = JournalforingV1Service(
+                    journalforingGateway = JournalforingGateway(
+                        httpClient = joarkHttpClient,
+                        joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
+                        systembrukerService = systembrukerService
+                    ),
+                    dokumentService = StaticDokumentService()
+                )
             )
-        )
+        }
         monitoring(
             collectorRegistry = collectorRegistry
         )
@@ -140,7 +139,7 @@ fun Application.pleiepengerJoark() {
     install(CallLogging) {
         callIdMdc("correlation_id")
         mdc("request_id") { call ->
-            val requestId = call.request.header(HttpHeaders.XRequestId)?.removePrefix(GENERATED_REQUEST_ID_PREFIX) ?: "$GENERATED_REQUEST_ID_PREFIX)${UUID.randomUUID()}"
+            val requestId = call.request.header(HttpHeaders.XRequestId)?.removePrefix(GENERATED_REQUEST_ID_PREFIX) ?: "$GENERATED_REQUEST_ID_PREFIX${UUID.randomUUID()}"
             call.response.header(HttpHeaders.XRequestId, requestId)
             requestId
         }

@@ -16,7 +16,7 @@ private const val getAccessTokenPath = "/auth-mock/get-test-access-token"
 private const val joarkInngaaendeForsendelsePath = "/joark-mock/rest/mottaInngaaendeForsendelse"
 private const val pleiepengerDokumentPath = "/pleiepenger-dokument-mock"
 
-private const val subject = "srvpleiepenger-sak"
+private const val subject = "srvpps-prosessering"
 
 
 object WiremockWrapper {

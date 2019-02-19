@@ -35,7 +35,7 @@ class PleiepengerJoarkTest {
 
         private val wireMockServer: WireMockServer = WiremockWrapper.bootstrap()
         private val objectMapper = ObjectMapper.server()
-        private val accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
+        private val authorizedAccessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
 
         fun getConfig() : ApplicationConfig {
             val fileConfig = ConfigFactory.load()
@@ -145,6 +145,45 @@ class PleiepengerJoarkTest {
         )
     }
 
+    @Test
+    fun `mangler authorization header`() {
+        val request = MeldingV1(
+            aktoerId = "12345",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
+            )
+        )
+
+        requestAndAssert(
+            request = request,
+            leggTilAuthorization = false,
+            expectedCode = HttpStatusCode.Unauthorized
+        )
+    }
+
+    @Test
+    fun `request fra ikke tillatt system`() {
+        val request = MeldingV1(
+            aktoerId = "12345",
+            sakId = "45678",
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                getDokumentUrl("1234"),
+                getDokumentUrl("5678")
+            )
+        )
+
+        requestAndAssert(
+            request = request,
+            leggTilAuthorization = false,
+            expectedCode = HttpStatusCode.Unauthorized,
+            accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized")
+        )
+    }
+
     @Test(expected = Valideringsfeil::class)
     fun `ugyldig aktoerID skal feile`() {
         val request = MeldingV1(
@@ -183,10 +222,14 @@ class PleiepengerJoarkTest {
     private fun requestAndAssert(request : MeldingV1,
                                  expectedResponse : JournalforingResponse? = null,
                                  expectedCode : HttpStatusCode? = null,
-                                 leggTilCorrelationId : Boolean = true) {
+                                 leggTilCorrelationId : Boolean = true,
+                                 leggTilAuthorization : Boolean = true,
+                                 accessToken : String = authorizedAccessToken) {
         with(engine) {
             handleRequest(HttpMethod.Post, "/v1/journalforing") {
-                addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+                if (leggTilAuthorization) {
+                    addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+                }
                 if (leggTilCorrelationId) {
                     addHeader(HttpHeaders.XCorrelationId, "123156")
                 }
@@ -194,7 +237,9 @@ class PleiepengerJoarkTest {
                 setBody(objectMapper.writeValueAsString(request))
             }.apply {
                 assertEquals(expectedCode, response.status())
-                assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
+                if (expectedResponse != null) {
+                    assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
+                }
             }
         }
     }
