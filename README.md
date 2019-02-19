@@ -8,22 +8,19 @@ Kan også sende samme request som kommer på kafka-topic som et REST API-kall ti
 ### Meldingsformat
 - aktoer_id : AtkørID for personen dokumentene skal journalføres på
 - mottatt : tidspunkt for når dokumentene er mottatt på ISO8601 format
-- saks_id : Id opprettet ved opprettelse av sak (pleiepenger-sak)
-- dokumenter : En liste med dokumenter som skal journalføres. Første dokument i listen vil bli "Hoveddokument" i Joark
-- dokument.tittel : Tittel for dokumentet
-- dokument.content_type : Content-Type for dokumentet. Per nå støtte kun 'application/pdf'
-- dokument.innhold : Base64-encoded / byte array av dokumentet
+- sak_id : Id opprettet ved opprettelse av sak (pleiepenger-sak)
+- dokumenter : En liste med URL'er relativ til "pleiepenger-dokument"
+- dokumenter : Må inneholde minst en entry.
+- dokumenter[0] : Vil bli "Hoveddokument" i Joark
 
 ```json
 {
 	"aktoer_id":"123561458",
 	"mottatt": "2018-12-18T20:43:32Z",
 	"sak_id": "1234654",
-	"dokumenter": [{
-		"tittel": "Hoveddokument",
-		"content_type": "application/pdf",
-		"innhold": "ey123445641235544224"
-	}]
+	"dokumenter": [
+	    "/dokument/c049520b-eed9-42d0-8d48-b7c8e6e1467e"
+	]
 }
 ```
 

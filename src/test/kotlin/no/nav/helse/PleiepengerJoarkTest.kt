@@ -15,7 +15,6 @@ import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.journalforing.api.JournalforingResponse
 import no.nav.helse.journalforing.api.ManglerCorrelationId
-import no.nav.helse.journalforing.v1.DokumentV1
 import no.nav.helse.journalforing.v1.MeldingV1
 import no.nav.helse.validering.Valideringsfeil
 import org.junit.AfterClass
@@ -92,11 +91,8 @@ class PleiepengerJoarkTest {
             sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/pdf"
-                )
+                "/dokument/123",
+                "/dokument/234"
             )
         )
         val expectedResponse = JournalforingResponse(journalPostId = "1234")
@@ -119,11 +115,8 @@ class PleiepengerJoarkTest {
             sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/pdf"
-                )
+                "/dokument/123",
+                "/dokument/234"
             )
         )
 
@@ -140,11 +133,8 @@ class PleiepengerJoarkTest {
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/pdf"
-                )
+                "/dokument/123",
+                "/dokument/234"
             )
         )
 
@@ -161,11 +151,8 @@ class PleiepengerJoarkTest {
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/pdf"
-                )
+                "/dokument/123",
+                "/dokument/234"
             )
         )
 
@@ -188,30 +175,6 @@ class PleiepengerJoarkTest {
         )
     }
 
-    @Test(expected = Valideringsfeil::class)
-    fun `melding med ikke stoettet format paa et vedlegg`() {
-        val request = MeldingV1(
-            aktoerId = "123456",
-            sakId = "45678",
-            mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/pdf"
-                ),
-                DokumentV1(
-                    tittel = "Hoveddokument",
-                    innhold = "test.pdf".fromResources(),
-                    contentType = "application/json"
-                )
-            )
-        )
-        requestAndAssert(
-            request = request
-        )
-    }
-
     private fun requestAndAssert(request : MeldingV1,
                                  expectedResponse : JournalforingResponse? = null,
                                  expectedCode : HttpStatusCode? = null,
@@ -229,9 +192,5 @@ class PleiepengerJoarkTest {
                 assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
             }
         }
-    }
-
-    fun String.fromResources() : ByteArray {
-        return Thread.currentThread().contextClassLoader.getResource(this).readBytes()
     }
 }

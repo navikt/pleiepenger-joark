@@ -1,6 +1,7 @@
 package no.nav.helse.journalforing.v1
 
 import io.ktor.http.ContentType
+import no.nav.helse.dokument.Dokument
 import no.nav.helse.journalforing.*
 import no.nav.helse.journalforing.gateway.*
 import java.time.ZoneOffset
@@ -23,7 +24,7 @@ object JournalPostRequestV1Factory {
         kanal: Kanal,
         sakId: SakId,
         fagSystem: FagSystem,
-        dokumenter: List<DokumentV1>,
+        dokumenter: List<Dokument>,
         mottatt: ZonedDateTime,
         typeReferanse: TypeReferanse) : JournalPostRequest {
 
@@ -43,8 +44,8 @@ object JournalPostRequestV1Factory {
             arkivSak = ArkivSak(arkivSakId = sakId.value, arkivSakSystem = fagSystem.kode)
         )
 
-        var hovedDokument : Dokument? = null
-        val vedlegg = mutableListOf<Dokument>()
+        var hovedDokument : JoarkDokument? = null
+        val vedlegg = mutableListOf<JoarkDokument>()
 
         dokumenter.forEach { dokument ->
             if (hovedDokument == null) {
@@ -79,7 +80,7 @@ object JournalPostRequestV1Factory {
         ))
     }
 
-    private fun mapDokument(dokument : DokumentV1, typeReferanse: TypeReferanse) : Dokument {
+    private fun mapDokument(dokument : Dokument, typeReferanse: TypeReferanse) : JoarkDokument {
         val arkivFilType = getArkivFilType(dokument)
         val dokumentVariant = listOf(
             DokumentVariant(
@@ -87,20 +88,20 @@ object JournalPostRequestV1Factory {
                 variantFormat = getVariantFormat(
                     arkivFilType
                 ),
-                dokument = dokument.innhold
+                dokument = dokument.content
             )
         )
 
         when (typeReferanse) {
             is DokumentType -> {
-                return Dokument(
+                return JoarkDokument(
                     tittel = dokument.tittel,
                     dokumentTypeId = typeReferanse.value,
                     dokumentVariant = dokumentVariant
                 )
             }
             is BrevKode -> {
-                return Dokument(
+                return JoarkDokument(
                     tittel = dokument.tittel,
                     brevkode = typeReferanse.brevKode,
                     dokumentkategori = typeReferanse.dokumentKategori,
@@ -113,8 +114,8 @@ object JournalPostRequestV1Factory {
 
     }
 
-    private fun getArkivFilType(dokument: DokumentV1) : ArkivFilType {
-        if (PDF_CONTENT_TYPE == dokument.contentTypeObject) return ArkivFilType.PDFA
+    private fun getArkivFilType(dokument: Dokument) : ArkivFilType {
+        if (PDF_CONTENT_TYPE == dokument.contentType) return ArkivFilType.PDFA
         throw IllegalStateException("Ikke støttet Content-Type '${dokument.contentType}'")
     }
 

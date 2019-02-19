@@ -1,6 +1,6 @@
 package no.nav.helse.journalforing.v1
 
-import io.ktor.http.ContentType
+import no.nav.helse.dokument.DokumentService
 import no.nav.helse.journalforing.*
 import no.nav.helse.journalforing.gateway.JournalforingGateway
 import no.nav.helse.validering.Brudd
@@ -16,11 +16,11 @@ private val PLEIEPENGER_SOKNAD_BREV_KODE = BrevKode(brevKode = "NAV 09-11.05", d
 private val GOSYS_FAGSYSTEM = FagSystem("GOSYS","FS22")
 private val JOURNALFORING_TITTEL = "Søknad om pleiepenger – sykt barn - NAV 09-11.05"
 
-private val SUPPORTERTE_CONTENT_TYPES = listOf(ContentType("application","pdf"))
 private val ONLY_DIGITS = Regex("\\d+")
 
 class JournalforingV1Service(
-    private val journalforingGateway : JournalforingGateway
+    private val journalforingGateway : JournalforingGateway,
+    private val dokumentService: DokumentService
 ) {
     suspend fun journalfor(
         melding: MeldingV1,
@@ -29,6 +29,10 @@ class JournalforingV1Service(
         logger.info(metaData.toString())
         validerMelding(melding)
 
+        logger.trace("Henter dokumenter")
+        val dokumenter = dokumentService.hentDokumenter(melding.dokumenter)
+
+        logger.trace("Genrerer request til Joark")
         val request = JournalPostRequestV1Factory.instance(
             tittel = JOURNALFORING_TITTEL,
             mottaker = AktoerId(melding.aktoerId),
@@ -36,25 +40,23 @@ class JournalforingV1Service(
             kanal = NAV_NO_KANAL,
             sakId = SakId(melding.sakId),
             fagSystem = GOSYS_FAGSYSTEM,
-            dokumenter = melding.dokumenter,
+            dokumenter = dokumenter,
             mottatt = melding.mottatt,
             typeReferanse = PLEIEPENGER_SOKNAD_BREV_KODE
         )
 
+        logger.trace("Sender melding til Joark")
+
         val response = journalforingGateway.jorunalfor(request)
 
+        logger.trace("JournalPost med ID ${response.journalpostId} opprettet")
         return JournalPostId(response.journalpostId)
     }
 
     private fun validerMelding(melding: MeldingV1) {
         val brudd = mutableListOf<Brudd>()
         if (melding.dokumenter.isEmpty()) {
-            brudd.add(Brudd(parameter = "dokumenter", error = "Det må sendes minst ett dokument"))
-        }
-        melding.dokumenter.forEach { dokument ->
-            if (!SUPPORTERTE_CONTENT_TYPES.contains(dokument.contentTypeObject)) {
-                brudd.add(Brudd(parameter = "dokument", error = "Content-Type '${dokument.contentType}' støttes ikke."))
-            }
+            brudd.add(Brudd(parameter = "dokument", error = "Det må sendes minst ett dokument"))
         }
         if (!melding.aktoerId.matches(ONLY_DIGITS)) {
             brudd.add(Brudd("aktoer_id", error = "${melding.aktoerId} er ikke en gyldig AktørID. Kan kun være siffer."))

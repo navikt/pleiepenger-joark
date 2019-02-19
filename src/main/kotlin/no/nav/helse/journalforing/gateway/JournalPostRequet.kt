@@ -3,8 +3,8 @@ package no.nav.helse.journalforing.gateway
 internal data class JournalPostRequest(
     val forsokEndeligJF: Boolean,
     val forsendelseInformasjon: ForsendelseInformasjon,
-    val dokumentInfoHoveddokument: Dokument,
-    val dokumentInfoVedlegg : List<Dokument>
+    val dokumentInfoHoveddokument: JoarkDokument,
+    val dokumentInfoVedlegg : List<JoarkDokument>
 )
 
 
@@ -20,7 +20,7 @@ internal data class ForsendelseInformasjon(
     val arkivSak: ArkivSak
 )
 
-internal data class Dokument(
+internal data class JoarkDokument(
     val tittel: String,
     val dokumentTypeId: String? = null, // Enten må dokumentId være satt
     val brevkode: String? = null, // Eller brevkode + dokumentkategori
