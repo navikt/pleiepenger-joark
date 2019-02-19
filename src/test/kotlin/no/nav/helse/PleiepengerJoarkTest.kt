@@ -178,7 +178,6 @@ class PleiepengerJoarkTest {
 
         requestAndAssert(
             request = request,
-            leggTilAuthorization = false,
             expectedCode = HttpStatusCode.Unauthorized,
             accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized")
         )
