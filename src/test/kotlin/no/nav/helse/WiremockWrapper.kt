@@ -76,7 +76,7 @@ object WiremockWrapper {
     }
 
     private fun stubGetDokument() {
-        val content = Base64.getEncoder().encodeToString(byteArrayOf(1,2,3,4))
+        val content = Base64.getEncoder().encodeToString("iPhone_6.jpg".fromResources())
         WireMock.stubFor(
             WireMock.get(WireMock.urlPathMatching(".*$pleiepengerDokumentPath.*"))
                 .willReturn(
@@ -151,4 +151,8 @@ fun WireMockServer.getPleiepengerDokumentUrl() : String {
 
 fun WireMockServer.getSubject() : String {
     return subject
+}
+
+fun String.fromResources() : ByteArray {
+    return Thread.currentThread().contextClassLoader.getResource(this).readBytes()
 }

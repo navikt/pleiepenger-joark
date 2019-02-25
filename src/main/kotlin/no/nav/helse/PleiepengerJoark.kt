@@ -23,6 +23,7 @@ import no.nav.helse.dokument.DokumentGateway
 import no.nav.helse.dokument.DokumentService
 import no.nav.helse.journalforing.api.journalforingApis
 import no.nav.helse.journalforing.api.metadataStatusPages
+import no.nav.helse.journalforing.converter.Image2PDFConverter
 import no.nav.helse.journalforing.gateway.JournalforingGateway
 import no.nav.helse.journalforing.v1.JournalforingV1Service
 import no.nav.helse.systembruker.SystembrukerGateway
@@ -128,6 +129,9 @@ fun Application.pleiepengerJoark() {
                         dokumentGateway = DokumentGateway(
                             httpClient = systembrukerOgDokumentHttpClient,
                             systembrukerService = systembrukerService
+                        ),
+                        image2PDFConverter = Image2PDFConverter(
+                            listOf("application/pdf", "image/jpeg", "image/png")
                         )
                     )
                 )

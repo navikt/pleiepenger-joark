@@ -46,6 +46,10 @@ dependencies {
     compile ("io.ktor:ktor-client-jackson:$ktorVersion")
     compile ("io.ktor:ktor-client-apache:$ktorVersion")
 
+    // Bilde til PNG
+    compile("org.apache.pdfbox:pdfbox:2.0.13")
+    compile("org.apache.tika:tika-core:1.20")
+
     // Test
     testCompile ("com.github.tomakehurst:wiremock:$wiremockVersion")
     testCompile("io.ktor:ktor-server-test-host:$ktorVersion") {
