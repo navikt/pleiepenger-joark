@@ -1,11 +1,9 @@
 package no.nav.helse.dokument
 
-import io.ktor.http.ContentType
-
 data class Dokument(
-    val tittel : String,
+    val title : String,
     val content : ByteArray,
-    val contentType : ContentType
+    val contentType : String
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -13,7 +11,7 @@ data class Dokument(
 
         other as Dokument
 
-        if (tittel != other.tittel) return false
+        if (title != other.title) return false
         if (!content.contentEquals(other.content)) return false
         if (contentType != other.contentType) return false
 
@@ -21,7 +19,7 @@ data class Dokument(
     }
 
     override fun hashCode(): Int {
-        var result = tittel.hashCode()
+        var result = title.hashCode()
         result = 31 * result + content.contentHashCode()
         result = 31 * result + contentType.hashCode()
         return result

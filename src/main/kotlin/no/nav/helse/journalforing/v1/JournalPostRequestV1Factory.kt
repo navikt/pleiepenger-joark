@@ -1,6 +1,5 @@
 package no.nav.helse.journalforing.v1
 
-import io.ktor.http.ContentType
 import no.nav.helse.dokument.Dokument
 import no.nav.helse.journalforing.*
 import no.nav.helse.journalforing.gateway.*
@@ -13,7 +12,7 @@ private const val AKTOR_ID_KEY = "aktoer"
 private const val IDENT_KEY = "ident"
 private const val PERSON_KEY = "person"
 
-private val PDF_CONTENT_TYPE = ContentType("application","pdf")
+private const val PDF_CONTENT_TYPE = "application/pdf"
 private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
 
 object JournalPostRequestV1Factory {
@@ -95,14 +94,14 @@ object JournalPostRequestV1Factory {
         when (typeReferanse) {
             is DokumentType -> {
                 return JoarkDokument(
-                    tittel = dokument.tittel,
+                    tittel = dokument.title,
                     dokumentTypeId = typeReferanse.value,
                     dokumentVariant = dokumentVariant
                 )
             }
             is BrevKode -> {
                 return JoarkDokument(
-                    tittel = dokument.tittel,
+                    tittel = dokument.title,
                     brevkode = typeReferanse.brevKode,
                     dokumentkategori = typeReferanse.dokumentKategori,
                     dokumentVariant = dokumentVariant

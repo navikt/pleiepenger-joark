@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.matching.ContainsPattern
 import no.nav.security.oidc.test.support.JwkGenerator
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.*
 
 private val logger: Logger = LoggerFactory.getLogger("nav.WiremockWrapper")
 private const val jwkSetPath = "/auth-mock/jwk-set"
@@ -45,6 +46,8 @@ object WiremockWrapper {
         stubGetSystembrukerToken()
         stubJwkSet()
 
+        stubGetDokument()
+
         provideGetAccessTokenEndPoint(wireMockServer.baseUrl())
 
         logger.info("Mock available on '{}'", wireMockServer.baseUrl())
@@ -68,6 +71,26 @@ object WiremockWrapper {
                                 "journalTilstand": "$tilstand"
                             }
                         """.trimIndent())
+                )
+        )
+    }
+
+    private fun stubGetDokument() {
+        val content = Base64.getEncoder().encodeToString(byteArrayOf(1,2,3,4))
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlPathMatching(".*$pleiepengerDokumentPath.*"))
+                .willReturn(
+                    WireMock.aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("""
+                            {
+                                "content": "$content",
+                                "content_type": "application/pdf",
+                                "title": "Dette er en tittel"
+                            }
+                        """.trimIndent()
+                        )
                 )
         )
     }

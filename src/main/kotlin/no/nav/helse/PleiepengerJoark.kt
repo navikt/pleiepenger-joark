@@ -19,7 +19,8 @@ import io.ktor.routing.Routing
 import io.ktor.util.KtorExperimentalAPI
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.hotspot.DefaultExports
-import no.nav.helse.dokument.StaticDokumentService
+import no.nav.helse.dokument.DokumentGateway
+import no.nav.helse.dokument.DokumentService
 import no.nav.helse.journalforing.api.journalforingApis
 import no.nav.helse.journalforing.api.metadataStatusPages
 import no.nav.helse.journalforing.gateway.JournalforingGateway
@@ -55,7 +56,7 @@ fun Application.pleiepengerJoark() {
             customizeClient { setProxyRoutePlanner() }
         }
     }
-    val systembrukerHttpClient = HttpClient(Apache) {
+    val systembrukerOgDokumentHttpClient = HttpClient(Apache) {
         install(JsonFeature) {
             serializer = JacksonSerializer{
                 ObjectMapper.server(this)
@@ -106,7 +107,7 @@ fun Application.pleiepengerJoark() {
 
     val systembrukerService = SystembrukerService(
         systembrukerGateway = SystembrukerGateway(
-            httpClient = systembrukerHttpClient,
+            httpClient = systembrukerOgDokumentHttpClient,
             clientId = configuration.getServiceAccountClientId(),
             clientSecret = configuration.getServiceAccountClientSecret(),
             scopes = configuration.getServiceAccountScopes(),
@@ -123,7 +124,12 @@ fun Application.pleiepengerJoark() {
                         joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
                         systembrukerService = systembrukerService
                     ),
-                    dokumentService = StaticDokumentService()
+                    dokumentService = DokumentService(
+                        dokumentGateway = DokumentGateway(
+                            httpClient = systembrukerOgDokumentHttpClient,
+                            systembrukerService = systembrukerService
+                        )
+                    )
                 )
             )
         }

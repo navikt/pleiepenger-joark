@@ -1,5 +1,6 @@
 package no.nav.helse.journalforing.v1
 
+import no.nav.helse.CorrelationId
 import no.nav.helse.dokument.DokumentService
 import no.nav.helse.journalforing.*
 import no.nav.helse.journalforing.gateway.JournalforingGateway
@@ -26,16 +27,25 @@ class JournalforingV1Service(
         melding: MeldingV1,
         metaData: MetadataV1) : JournalPostId {
 
+        val correlationId = CorrelationId(metaData.correlationId)
+
         logger.info(metaData.toString())
         validerMelding(melding)
 
+        val aktoerId = AktoerId(melding.aktoerId)
+        logger.trace("Journalfører for AktørID $aktoerId")
+
         logger.trace("Henter dokumenter")
-        val dokumenter = dokumentService.hentDokumenter(melding.dokumenter)
+        val dokumenter = dokumentService.hentDokumenter(
+            urls = melding.dokumenter,
+            correlationId = correlationId,
+            aktoerId = aktoerId
+        )
 
         logger.trace("Genrerer request til Joark")
         val request = JournalPostRequestV1Factory.instance(
             tittel = JOURNALFORING_TITTEL,
-            mottaker = AktoerId(melding.aktoerId),
+            mottaker = aktoerId,
             tema = OMSORG_TEMA,
             kanal = NAV_NO_KANAL,
             sakId = SakId(melding.sakId),
