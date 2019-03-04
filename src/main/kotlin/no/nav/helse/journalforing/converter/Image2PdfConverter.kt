@@ -56,9 +56,9 @@ class Image2PDFConverter(
         private fun addPDFPageFromImage(doc: PDDocument, origImg: ByteArray, imgFormat: String) {
             val page = PDPage(A4)
             doc.addPage(page)
-            val scaledImg = ImageScaler.downToA4(origImg, imgFormat)
+            //val scaledImg = ImageScaler.downToA4(origImg, imgFormat)
             PDPageContentStream(doc, page).use { contentStream ->
-                val ximage = PDImageXObject.createFromByteArray(doc, scaledImg, "img")
+                val ximage = PDImageXObject.createFromByteArray(doc, origImg, "img")
                 contentStream.drawImage(ximage, A4.lowerLeftX, A4.lowerLeftY)
             }
         }
