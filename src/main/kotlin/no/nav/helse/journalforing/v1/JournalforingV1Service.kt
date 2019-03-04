@@ -38,8 +38,7 @@ class JournalforingV1Service(
         logger.trace("Henter dokumenter")
         val dokumenter = dokumentService.hentDokumenter(
             urls = melding.dokumenter,
-            correlationId = correlationId,
-            aktoerId = aktoerId
+            correlationId = correlationId
         )
 
         logger.trace("Genrerer request til Joark")

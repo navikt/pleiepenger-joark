@@ -19,7 +19,6 @@ class DokumentService(
 ) {
 
     suspend fun hentDokumenter(urls: List<URL>,
-                               aktoerId : AktoerId,
                                correlationId: CorrelationId): List<Dokument> {
         logger.trace("Henter ${urls.size} dokumenter.")
         val dokumenter = coroutineScope {
@@ -28,8 +27,7 @@ class DokumentService(
                 futures.add(async {
                     dokumentGateway.hentDokument(
                         url = it,
-                        correlationId = correlationId,
-                        aktoerId = aktoerId
+                        correlationId = correlationId
                     )
                 })
 
