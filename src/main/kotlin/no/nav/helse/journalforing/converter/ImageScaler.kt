@@ -1,9 +1,10 @@
 package no.nav.helse.journalforing.converter
 
 import org.apache.pdfbox.pdmodel.common.PDRectangle
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import java.awt.Dimension
-import java.awt.Graphics2D
-import java.awt.Image
+import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
 import java.awt.image.AffineTransformOp
 import java.awt.image.AffineTransformOp.TYPE_BILINEAR
@@ -11,6 +12,8 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
+
+private val logger: Logger = LoggerFactory.getLogger("nav.ImageScaler")
 
 object ImageScaler {
 
@@ -67,14 +70,28 @@ object ImageScaler {
     }
 
     private fun scaleDown(origImage: BufferedImage, newDim: Dimension): BufferedImage {
+        logger.trace("Henter ny mål for bildet")
         val newWidth = newDim.getWidth().toInt()
         val newHeight = newDim.getHeight().toInt()
-        val tempImg = origImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH)
-        val scaledImg = BufferedImage(newWidth, newHeight, BufferedImage.TYPE_3BYTE_BGR)
-        val g = scaledImg.graphics as Graphics2D
-        g.drawImage(tempImg, 0, 0, null)
-        g.dispose()
-        return scaledImg
+        logger.trace("newWidth=$newWidth")
+        logger.trace("newHeight=$newHeight")
+        logger.trace("Genererer et bilde med riktig dimensjon")
+        val destinationImage = BufferedImage(newWidth, newHeight, origImage.type)
+        logger.trace("Kalkulerer skalering")
+        val sx = newWidth.toDouble() / origImage.width.toDouble()
+        val sy = newHeight.toDouble() / origImage.height.toDouble()
+        logger.trace("sx=$sx")
+        logger.trace("sy=$sy")
+        logger.trace("Genererer Graphics2d Object")
+        val graphics2D = destinationImage.createGraphics()
+        logger.trace("Setter Rendering Hints")
+        graphics2D.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        logger.trace("Setter skaleringsverdier")
+        graphics2D.scale(sx, sy)
+        logger.trace("Genererer det nye bildet med ritkig oppløsning")
+        graphics2D.drawImage(origImage, 0, 0, null)
+        graphics2D.dispose()
+        return destinationImage
     }
 
     private fun toBytes(img: BufferedImage, format: String): ByteArray {
