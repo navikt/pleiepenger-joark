@@ -10,15 +10,20 @@ class Image2PdfConverterTest {
 
     @Test
     @Ignore
-    fun `Skaler bilde`() {
-        val hoyopplost = ImageScaler.downToA4("hoyopplost.jpg".fromResources(), "jpeg")
-        val pathHotopplost = "${System.getProperty("user.dir")}/scaled-image-hoyopplost-${UUID.randomUUID()}.jpg"
-        val fileHoyopplost = File(pathHotopplost)
-        fileHoyopplost.writeBytes(hoyopplost)
+    fun `Generert skalerte bilder`() {
+        scale(resourceName = "hoyopplost.jpg", name = "hoyopplost")
+        scale(resourceName = "widescreen.jpg", name = "widescreen")
+        scale(resourceName = "legeerklaering_iPhone_XS.jpg", name = "legeerklaering")
+    }
 
-        val widescreen = ImageScaler.downToA4("widescreen.jpg".fromResources(), "jpeg")
-        val pathWidescreen = "${System.getProperty("user.dir")}/scaled-image-widescreen-${UUID.randomUUID()}.jpg"
-        val fileWidescreen = File(pathWidescreen)
-        fileWidescreen.writeBytes(widescreen)
+    private fun scale(
+        resourceName : String,
+        format : String = "jpeg",
+        name : String
+    ) {
+        val image = ImageScaler.downToA4(resourceName.fromResources(), format)
+        val path = "${System.getProperty("user.dir")}/scaled-image-$name-${UUID.randomUUID()}.$format"
+        val file = File(path)
+        file.writeBytes(image)
     }
 }

@@ -4,6 +4,8 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.awt.Dimension
+import java.awt.Graphics2D
+import java.awt.Image
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
 import java.awt.image.AffineTransformOp
@@ -34,7 +36,7 @@ object ImageScaler {
             origImage
         } else {
             logger.trace("Starter nedskalering av bilde")
-            val scaledImg = scaleDown(image, newDim)
+            val scaledImg = scaleWithBufferedImageGetScaledInstance(image, newDim)
             logger.trace("Bildet nedskalert.")
             val finalizedImg = if (rotate) {
                 logger.trace("Roterer bildet.")
@@ -47,9 +49,8 @@ object ImageScaler {
         }
     }
 
-
     private fun shouldRotate(image: BufferedImage) : Boolean {
-        return image.width >= image.height
+        return image.width > image.height
     }
 
     private fun rotatePortrait(image: BufferedImage): BufferedImage {
@@ -88,7 +89,19 @@ object ImageScaler {
         return Dimension(newWidth, newHeight)
     }
 
-    private fun scaleDown(origImage: BufferedImage, newDim: Dimension): BufferedImage {
+    private fun scaleWithBufferedImageGetScaledInstance(origImage: BufferedImage, newDim: Dimension): BufferedImage {
+        val newWidth = newDim.getWidth().toInt()
+        val newHeight = newDim.getHeight().toInt()
+        val tempImg = origImage.getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH)
+        val scaledImg = BufferedImage(newWidth, newHeight, BufferedImage.TYPE_3BYTE_BGR)
+        val g = scaledImg.graphics as Graphics2D
+        g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+        g.drawImage(tempImg, 0, 0, null)
+        g.dispose()
+        return scaledImg
+    }
+
+    private fun scaleWithGraphics2dScale(origImage: BufferedImage, newDim: Dimension): BufferedImage {
         logger.trace("Henter ny mål for bildet")
         val newWidth = newDim.getWidth().toInt()
         val newHeight = newDim.getHeight().toInt()
