@@ -14,32 +14,45 @@ import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
 private val logger: Logger = LoggerFactory.getLogger("nav.ImageScaler")
+private val A4_DIM = Dimension(PDRectangle.A4.width.toInt(), PDRectangle.A4.height.toInt())
 
 object ImageScaler {
 
     fun downToA4(origImage: ByteArray, format: String): ByteArray {
-        val A4 = PDRectangle.A4
-        var image = ImageIO.read(ByteArrayInputStream(origImage))
-
-        image = rotatePortrait(image)
-
-        val pdfPageDim = Dimension(A4.width.toInt(), A4.height.toInt())
+        logger.trace("Skalerer til A4")
+        val image = ImageIO.read(ByteArrayInputStream(origImage))
+        logger.trace("Bildestørrelse (bytes) = ${origImage.size}")
         val origDim = Dimension(image.width, image.height)
-        val newDim = getScaledDimension(origDim, pdfPageDim)
+        logger.trace("Bildeoppløsning (bredde*høyde) =  ${image.width}*${image.height}")
+        val rotate = shouldRotate(image)
+        logger.trace("Kommer til å rotere bildet = $rotate")
+        val newDim = getScaledDimension(origDim, rotate)
+        logger.trace("Bildeoppløsning etter nedskalering blir (bredde*høyde) = ${newDim.width}*${newDim.height}")
 
         return if (newDim == origDim) {
+            logger.trace("Den nedskalerte oppløsningen er den samme som på originalbildet. Trenger ikke gjøre noe.")
             origImage
         } else {
+            logger.trace("Starter nedskalering av bilde")
             val scaledImg = scaleDown(image, newDim)
-            toBytes(scaledImg, format)
+            logger.trace("Bildet nedskalert.")
+            val finalizedImg = if (rotate) {
+                logger.trace("Roterer bildet.")
+                rotatePortrait(scaledImg)
+            } else {
+                logger.trace("Roterer ikke bildet.")
+                scaledImg
+            }
+            toBytes(finalizedImg, format)
         }
     }
 
-    private fun rotatePortrait(image: BufferedImage): BufferedImage {
-        if (image.height >= image.width) {
-            return image
-        }
 
+    private fun shouldRotate(image: BufferedImage) : Boolean {
+        return image.width >= image.height
+    }
+
+    private fun rotatePortrait(image: BufferedImage): BufferedImage {
         var rotatedImage = BufferedImage(image.height, image.width, image.type)
         val transform = AffineTransform()
         transform.rotate(Math.toRadians(90.0), (image.height / 2f).toDouble(), (image.height / 2f).toDouble())
@@ -48,11 +61,17 @@ object ImageScaler {
         return rotatedImage
     }
 
-    private fun getScaledDimension(imgSize: Dimension, a4: Dimension): Dimension {
+    private fun getScaledDimension(
+        imgSize: Dimension,
+        rotate: Boolean
+    ): Dimension {
+
         val originalWidth = imgSize.width
         val originalHeight = imgSize.height
-        val a4Width = a4.width
-        val a4Height = a4.height
+
+        val a4Width = if (rotate) A4_DIM.height else A4_DIM.width
+        val a4Height = if (rotate) A4_DIM.width else A4_DIM.height
+
         var newWidth = originalWidth
         var newHeight = originalHeight
 
