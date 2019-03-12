@@ -13,6 +13,9 @@ private const val IDENT_KEY = "ident"
 private const val PERSON_KEY = "person"
 
 private const val PDF_CONTENT_TYPE = "application/pdf"
+private const val JSON_CONTENT_TYPE = "application/json"
+private const val XML_CONTENT_TYPE = "application/xml"
+
 private val DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ")
 
 object JournalPostRequestV1Factory {
@@ -115,6 +118,8 @@ object JournalPostRequestV1Factory {
 
     private fun getArkivFilType(dokument: Dokument) : ArkivFilType {
         if (PDF_CONTENT_TYPE == dokument.contentType) return ArkivFilType.PDFA
+        if (JSON_CONTENT_TYPE == dokument.contentType) return ArkivFilType.JSON
+        if (XML_CONTENT_TYPE == dokument.contentType) return ArkivFilType.XML
         throw IllegalStateException("Ikke støttet Content-Type '${dokument.contentType}'")
     }
 
