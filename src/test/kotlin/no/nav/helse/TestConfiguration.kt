@@ -19,7 +19,8 @@ object TestConfiguration {
             Pair("nav.authorization.jwks_url","$jwkSetUrl"),
             Pair("nav.authorization.issuer","$issuer"),
             Pair("nav.rest_api.authorized_systems","$authorizedSystems"),
-            Pair("nav.joark.inngaaende_forsendelse_url", "$joarkInngaaendeForsendelseUrl")
+            Pair("nav.joark.inngaaende_forsendelse_url", "$joarkInngaaendeForsendelseUrl"),
+            Pair("nav.authorization.service_account.client_secret", "foo")
         )
     }
 

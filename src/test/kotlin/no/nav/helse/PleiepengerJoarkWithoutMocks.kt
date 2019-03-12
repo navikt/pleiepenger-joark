@@ -19,7 +19,7 @@ class PleiepengerJoarkWithoutMocks {
             System.setProperty("https.proxyHost", "127.0.0.1")
             System.setProperty("https.proxyPort", "5001")
 
-            // nav.authorization.service_account.password Må fortsatt settes som parameter ved oppstart utenom koden
+            // nav.authorization.service_account.client_secret Må fortsatt settes som parameter ved oppstart utenom koden
 
             val q1Args = TestConfiguration.asArray(TestConfiguration.asMap(
                 port = 8113,
