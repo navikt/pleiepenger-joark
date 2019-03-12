@@ -15,14 +15,15 @@ private val logger: Logger = LoggerFactory.getLogger("nav.DokumentService")
 
 class DokumentService(
     private val dokumentGateway: DokumentGateway,
-    private val image2PDFConverter: Image2PDFConverter
+    private val image2PDFConverter: Image2PDFConverter,
+    private val contentTypeService: ContentTypeService
 ) {
 
     suspend fun hentDokumenter(urls: List<URL>,
                                aktoerId: AktoerId,
                                correlationId: CorrelationId): List<Dokument> {
         logger.trace("Henter ${urls.size} dokumenter.")
-        val dokumenter = coroutineScope {
+        val alleDokumenter = coroutineScope {
             val futures = mutableListOf<Deferred<Dokument>>()
             urls.forEach {
                 futures.add(async {
@@ -38,22 +39,29 @@ class DokumentService(
         }
 
         logger.trace("Alle dokumenter hentet.")
+        val bildeDokumenter = alleDokumenter.filter { contentTypeService.isSupportedImage(it.contentType) }
+        logger.trace("${bildeDokumenter.size} bilder.")
+        val applicationDokumenter = alleDokumenter.filter { contentTypeService.isSupportedApplication(it.contentType) }
+        logger.trace("${applicationDokumenter.size} andre støttede dokumenter.")
+        val ikkeSupporterteDokumenter = alleDokumenter.filter { !contentTypeService.isSupported(it.contentType) }
+        if (ikkeSupporterteDokumenter.isNotEmpty()) {
+            logger.warn("${ikkeSupporterteDokumenter.size} dokumenter som ikke støttes. Disse vil utelates fra journalføring.")
+        }
 
+        val supporterteDokumenter = applicationDokumenter.toMutableList()
 
-        logger.trace("Endrer fra bilde til PDF.")
-        val pdfDokumenter = mutableListOf<Dokument>()
-
-        dokumenter.forEach { it ->
-            pdfDokumenter.add(
+        logger.trace("Gjør om de ${bildeDokumenter.size} bildene til PDF.")
+        bildeDokumenter.forEach { it ->
+            supporterteDokumenter.add(
                 Dokument(
                     title = it.title,
                     contentType = "application/pdf",
-                    content = image2PDFConverter.convert(it.content)
+                    content = image2PDFConverter.convert(bytes = it.content, contentType = it.contentType)
                 )
             )
         }
 
-        logger.trace("Endring fra bilde til PDF gjennomført.")
-        return pdfDokumenter
+        logger.trace("Endringer fra bilde til PDF gjennomført.")
+        return supporterteDokumenter
     }
 }

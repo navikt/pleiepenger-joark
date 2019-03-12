@@ -21,6 +21,7 @@ import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.hotspot.DefaultExports
 import no.nav.helse.dokument.DokumentGateway
 import no.nav.helse.dokument.DokumentService
+import no.nav.helse.dokument.ContentTypeService
 import no.nav.helse.journalforing.api.journalforingApis
 import no.nav.helse.journalforing.api.metadataStatusPages
 import no.nav.helse.journalforing.converter.Image2PDFConverter
@@ -130,9 +131,8 @@ fun Application.pleiepengerJoark() {
                             httpClient = systembrukerOgDokumentHttpClient,
                             systembrukerService = systembrukerService
                         ),
-                        image2PDFConverter = Image2PDFConverter(
-                            listOf("application/pdf", "image/jpeg", "image/png")
-                        )
+                        image2PDFConverter = Image2PDFConverter(),
+                        contentTypeService = ContentTypeService()
                     )
                 )
             )

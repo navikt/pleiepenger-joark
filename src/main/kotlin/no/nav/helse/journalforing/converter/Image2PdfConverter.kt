@@ -5,7 +5,6 @@ import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.PDPageContentStream
 import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
-import org.apache.tika.Tika
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
@@ -14,28 +13,15 @@ import java.io.ByteArrayOutputStream
 private const val PDF = "application/pdf"
 private val logger: Logger = LoggerFactory.getLogger("nav.Image2PDFConverter")
 
-class Image2PDFConverter(
-    private val supportedMediaTypes : List<String>
-) {
-    private val tika = Tika()
-
-
-    fun convert(bytes: ByteArray): ByteArray {
-        val mediaType = tika.detect(bytes)
-        if (PDF == mediaType) {
-            logger.trace("Trenger ikke å konvertere. er allerede PDF.")
-            return bytes
+class Image2PDFConverter {
+    fun convert(bytes: ByteArray, contentType: String): ByteArray {
+        logger.trace("Konverterer fra $contentType til PDF.")
+        return try { embedImagesInPdf(
+            imgType = contentType.substringAfterLast("/"),
+            image = bytes
+        )} catch (cause: Throwable) {
+            throw IllegalStateException("Klarte ikke å gjøre om $contentType bilde til PDF", cause)
         }
-        if (supportedMediaTypes.contains(mediaType)) {
-            logger.trace("Konverterer fra $mediaType til PDF.")
-            return try { embedImagesInPdf(
-                imgType = mediaType.split("/")[1],
-                image = bytes
-            )} catch (cause: Throwable) {
-                throw IllegalStateException("Klarte ikke å gjøre om $mediaType bilde til PDF", cause)
-            }
-        }
-        throw IllegalStateException("Støtter ikke $mediaType")
     }
 
     companion object {
