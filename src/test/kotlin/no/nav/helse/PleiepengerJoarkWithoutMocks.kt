@@ -24,7 +24,7 @@ class PleiepengerJoarkWithoutMocks {
             val q1Args = TestConfiguration.asArray(TestConfiguration.asMap(
                 port = 8113,
                 tokenUrl = "https://security-token-service.nais.preprod.local/rest/v1/sts/token",
-                joarkInngaaendeForsendelseUrl = "https://dokmotinngaaende-q1.nais.preprod.local/rest/mottaInngaaendeForsendelse",
+                dokmotinngaaendeUrl = "https://dokmotinngaaende-q1.nais.preprod.local",
                 jwkSetUrl = "https://security-token-service.nais.preprod.local/rest/v1/sts/jwks",
                 issuer = "https://security-token-service.nais.preprod.local",
                 authorizedSystems = "srvpps-prosessering,srvpleiepenger-joark"

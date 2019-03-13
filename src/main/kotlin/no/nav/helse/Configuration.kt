@@ -33,8 +33,8 @@ data class Configuration(private val config : ApplicationConfig) {
         )
     }
 
-    fun getJoarkInngaaendeForseldenseUrl() : URL {
-        return URL(getRequiredString("nav.joark.inngaaende_forsendelse_url"))
+    fun getDokmotinngaaendeBaseUrl() : URL {
+        return URL(getRequiredString("nav.dokmotinngaaende_base_url"))
     }
 
     fun getTokenUrl() : URL {

@@ -14,7 +14,10 @@ private val logger: Logger = LoggerFactory.getLogger("nav.WiremockWrapper")
 private const val jwkSetPath = "/auth-mock/jwk-set"
 private const val tokenPath = "/auth-mock/token"
 private const val getAccessTokenPath = "/auth-mock/get-test-access-token"
-private const val joarkInngaaendeForsendelsePath = "/joark-mock/rest/mottaInngaaendeForsendelse"
+
+private const val dokmotinngaaendeBasePath = "/dokmotinngaaende-mock"
+private const val dokmotinngaaendeMottaInngaaendeForsendelsePath = "$dokmotinngaaendeBasePath/rest/mottaInngaaendeForsendelse"
+
 private const val pleiepengerDokumentPath = "/pleiepenger-dokument-mock"
 
 private const val subject = "srvpps-prosessering"
@@ -43,21 +46,25 @@ object WiremockWrapper {
         wireMockServer.start()
         WireMock.configureFor(wireMockServer.port())
 
+        // Authorization
         stubGetSystembrukerToken()
         stubJwkSet()
+        provideGetAccessTokenEndPoint(wireMockServer.baseUrl())
 
+        // Dokument
         stubGetDokument()
 
-        provideGetAccessTokenEndPoint(wireMockServer.baseUrl())
+        // dokmotinngaaende
 
         logger.info("Mock available on '{}'", wireMockServer.baseUrl())
         return wireMockServer
     }
 
-    fun stubJoarkOk(sakId: String,
-                    tilstand: String) {
+    fun stubMottaInngaaendeForsendelseOk(
+        sakId: String,
+        tilstand: String) {
         WireMock.stubFor(
-            WireMock.post(WireMock.urlMatching(".*$joarkInngaaendeForsendelsePath"))
+            WireMock.post(WireMock.urlMatching(".*$dokmotinngaaendeMottaInngaaendeForsendelsePath"))
                 .withRequestBody(ContainsPattern("""
                     "arkivSakId" : "$sakId"
                     """.trimIndent()))
@@ -141,8 +148,8 @@ fun WireMockServer.getTokenUrl() : String {
     return baseUrl() + tokenPath
 }
 
-fun WireMockServer.getJoarkInngaaendeForsendelseUrl() : String {
-    return baseUrl() + joarkInngaaendeForsendelsePath
+fun WireMockServer.getDokmotinngaaendeUrl() : String {
+    return baseUrl() + dokmotinngaaendeBasePath
 }
 
 fun WireMockServer.getPleiepengerDokumentUrl() : String {

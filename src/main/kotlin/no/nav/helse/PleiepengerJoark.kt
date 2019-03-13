@@ -12,6 +12,7 @@ import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.features.*
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
 import io.ktor.request.header
 import io.ktor.response.header
@@ -79,6 +80,7 @@ fun Application.pleiepengerJoark() {
         .rateLimited(10, 1, TimeUnit.MINUTES)
         .build()
 
+
     install(Authentication) {
         jwt {
             verifier(jwkProvider, configuration.getIssuer())
@@ -117,20 +119,24 @@ fun Application.pleiepengerJoark() {
         )
     )
 
+    val journalforingGateway = JournalforingGateway(
+        httpClient = joarkHttpClient,
+        baseUrl = configuration.getDokmotinngaaendeBaseUrl(),
+        systembrukerService = systembrukerService
+    )
+
+    val dokumentGateway = DokumentGateway(
+        httpClient = systembrukerOgDokumentHttpClient,
+        systembrukerService = systembrukerService
+    )
+
     install(Routing) {
         authenticate {
             journalforingApis(
                 journalforingV1Service = JournalforingV1Service(
-                    journalforingGateway = JournalforingGateway(
-                        httpClient = joarkHttpClient,
-                        joarkInngaaendeForsendelseUrl = configuration.getJoarkInngaaendeForseldenseUrl(),
-                        systembrukerService = systembrukerService
-                    ),
+                    journalforingGateway = journalforingGateway,
                     dokumentService = DokumentService(
-                        dokumentGateway = DokumentGateway(
-                            httpClient = systembrukerOgDokumentHttpClient,
-                            systembrukerService = systembrukerService
-                        ),
+                        dokumentGateway = dokumentGateway,
                         image2PDFConverter = Image2PDFConverter(),
                         contentTypeService = ContentTypeService()
                     )
@@ -138,7 +144,15 @@ fun Application.pleiepengerJoark() {
             )
         }
         monitoring(
-            collectorRegistry = collectorRegistry
+            collectorRegistry = collectorRegistry,
+            healthChecks = listOf(
+                systembrukerService,
+                dokumentGateway,
+                journalforingGateway
+            ),
+            healthCheckUrls = mapOf(
+                Pair(configuration.getJwksUrl(), HttpStatusCode.OK)
+            )
         )
     }
 
@@ -156,6 +170,6 @@ fun Application.pleiepengerJoark() {
     }
 }
 
-private fun HttpAsyncClientBuilder.setProxyRoutePlanner() {
+fun HttpAsyncClientBuilder.setProxyRoutePlanner() {
     setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
 }

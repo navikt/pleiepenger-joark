@@ -6,8 +6,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.url
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import no.nav.helse.CorrelationId
-import no.nav.helse.HttpRequest
+import no.nav.helse.*
 import no.nav.helse.journalforing.AktoerId
 import no.nav.helse.systembruker.SystembrukerService
 import java.net.URL
@@ -15,10 +14,23 @@ import java.net.URL
 class DokumentGateway(
     private val httpClient: HttpClient,
     private val systembrukerService: SystembrukerService
-) {
+) : HealthCheck {
+
+    private val healthCheckObserver = HealthCheckObserver(
+        name = "henting_av_dokumenter",
+        help = "Henting av dokumenter fra pleiepenger-dokument"
+    )
+
     suspend fun hentDokument(url : URL,
                              aktoerId: AktoerId,
                              correlationId: CorrelationId) : Dokument {
+        return healthCheckObserver.observe { request(url, aktoerId, correlationId) }
+    }
+
+    suspend fun request(
+        url : URL,
+        aktoerId: AktoerId,
+        correlationId: CorrelationId) : Dokument {
         val urlMedEier = HttpRequest.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", aktoerId.value)))
         val httpRequest = HttpRequestBuilder()
         httpRequest.header(HttpHeaders.Authorization, systembrukerService.getAuthorizationHeader())
@@ -30,5 +42,9 @@ class DokumentGateway(
             httpClient = httpClient,
             httpRequest = httpRequest
         )
+    }
+
+    override suspend fun check(): Health {
+        return healthCheckObserver.health()
     }
 }

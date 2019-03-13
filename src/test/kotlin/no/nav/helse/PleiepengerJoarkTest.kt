@@ -19,6 +19,8 @@ import no.nav.helse.journalforing.v1.MeldingV1
 import no.nav.helse.validering.Valideringsfeil
 import org.junit.AfterClass
 import org.junit.BeforeClass
+import org.junit.FixMethodOrder
+import org.junit.runners.MethodSorters
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URL
@@ -28,6 +30,7 @@ import kotlin.test.*
 private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoarkTest")
 
 @KtorExperimentalAPI
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class PleiepengerJoarkTest {
 
     @KtorExperimentalAPI
@@ -67,7 +70,7 @@ class PleiepengerJoarkTest {
     }
 
     @Test
-    fun `test isready, isalive og metrics`() {
+    fun `z_ test isready, isalive og metrics`() {
         with(engine) {
             handleRequest(HttpMethod.Get, "/isready") {}.apply {
                 assertEquals(HttpStatusCode.OK, response.status())
@@ -75,6 +78,9 @@ class PleiepengerJoarkTest {
                     assertEquals(HttpStatusCode.OK, response.status())
                     handleRequest(HttpMethod.Get, "/metrics") {}.apply {
                         assertEquals(HttpStatusCode.OK, response.status())
+                        handleRequest(HttpMethod.Get, "/health") {}.apply {
+                            assertEquals(HttpStatusCode.OK, response.status())
+                        }
                     }
                 }
             }
@@ -85,7 +91,7 @@ class PleiepengerJoarkTest {
     fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
         val sakId =  "5678"
 
-        WiremockWrapper.stubJoarkOk(sakId = sakId, tilstand = "ENDELIG_JOURNALFOERT")
+        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "ENDELIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "1234",
@@ -109,7 +115,7 @@ class PleiepengerJoarkTest {
     fun `gyldig melding til joark som kun blir midlertidig jorunalfoert gir feil`() {
         val sakId =  "56789"
 
-        WiremockWrapper.stubJoarkOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
+        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "12345",
