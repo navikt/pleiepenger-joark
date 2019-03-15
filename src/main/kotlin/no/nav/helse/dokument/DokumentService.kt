@@ -1,5 +1,6 @@
 package no.nav.helse.dokument
 
+import io.prometheus.client.Counter
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -12,6 +13,12 @@ import org.slf4j.LoggerFactory
 import java.net.URL
 
 private val logger: Logger = LoggerFactory.getLogger("nav.DokumentService")
+
+private val dokumentContentTypeCounter = Counter.build()
+    .name("dokument_content_type_counter")
+    .labelNames("content_type")
+    .help("Teller for dokumenttyper som journalføres.")
+    .register()
 
 class DokumentService(
     private val dokumentGateway: DokumentGateway,
@@ -37,6 +44,8 @@ class DokumentService(
             }
             futures.awaitAll()
         }
+
+        alleDokumenter.tellContentType()
 
         logger.trace("Alle dokumenter hentet.")
         val bildeDokumenter = alleDokumenter.filter { contentTypeService.isSupportedImage(it.contentType) }
@@ -64,4 +73,15 @@ class DokumentService(
         logger.trace("Endringer fra bilde til PDF gjennomført.")
         return supporterteDokumenter
     }
+}
+
+private fun List<Dokument>.tellContentType() {
+    forEach {
+        dokumentContentTypeCounter.labels(it.contentType.withoutSlash()).inc()
+        dokumentContentTypeCounter.labels("total").inc()
+    }
+}
+
+private fun String.withoutSlash(): String {
+    return replace("/","")
 }

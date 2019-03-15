@@ -39,6 +39,7 @@ import java.net.ProxySelector
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+private const val APP = "pliepenger-joark"
 private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoark")
 private const val GENERATED_REQUEST_ID_PREFIX = "generated-"
 
@@ -84,7 +85,7 @@ fun Application.pleiepengerJoark() {
     install(Authentication) {
         jwt {
             verifier(jwkProvider, configuration.getIssuer())
-            realm = "pleiepenger-joark"
+            realm = APP
             validate { credentials ->
                 logger.info("authorization attempt for ${credentials.payload.subject}")
                 if (credentials.payload.subject in authorizedSystems) {
@@ -154,6 +155,10 @@ fun Application.pleiepengerJoark() {
                 Pair(configuration.getJwksUrl(), HttpStatusCode.OK)
             )
         )
+    }
+
+    install(MonitorReceivedHttpRequestsFeature) {
+        app = APP
     }
 
     install(CallId) {
