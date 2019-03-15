@@ -3,6 +3,8 @@ package no.nav.helse
 import io.ktor.application.ApplicationCall
 import io.ktor.application.ApplicationCallPipeline
 import io.ktor.application.ApplicationFeature
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.isSuccess
 import io.ktor.request.httpMethod
 import io.ktor.request.path
 import io.ktor.util.AttributeKey
@@ -50,7 +52,14 @@ class MonitorReceivedHttpRequestsFeature (
                     context.proceed()
                 }
             } finally {
-                counter.labels(configure.app, verb, path, context.context.response.status()?.value?.toString() ?: "200").inc()
+                val httpStatusCode = (context.context.response.status() ?: HttpStatusCode.OK)
+                val httpStatusCodeString = httpStatusCode.value.toString()
+                val family = "${httpStatusCodeString[0]}xx"
+                val success = if (httpStatusCode.isSuccess()) "success" else "failure"
+
+                counter.labels(configure.app, verb, path, httpStatusCodeString).inc()
+                counter.labels(configure.app, verb, path, family).inc()
+                counter.labels(configure.app, verb, path, success).inc()
             }
         } else {
             context.proceed()
