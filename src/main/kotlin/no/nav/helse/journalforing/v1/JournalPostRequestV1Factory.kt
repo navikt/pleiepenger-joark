@@ -58,7 +58,9 @@ object JournalPostRequestV1Factory {
         }
 
         return JournalPostRequest(
-            forsokEndeligJF = true,
+            // Så lenge det blir opprettet jorunalføringsoppgave i Gosys settes denne til false. Om et av dokumentene har ArkivFilType.JSON eller ArkivFilType.XML må denne også være false..
+            // Noe uklart hvordan det da skal kunne løses med "automatisk journalføring" når vi ønsker det..
+            forsokEndeligJF = false,
             forsendelseInformasjon = forsendelseInformasjon,
             dokumentInfoHoveddokument = hovedDokument!!,
             dokumentInfoVedlegg = vedlegg

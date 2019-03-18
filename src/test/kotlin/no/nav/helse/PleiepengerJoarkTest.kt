@@ -91,7 +91,7 @@ class PleiepengerJoarkTest {
     fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
         val sakId =  "5678"
 
-        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "ENDELIG_JOURNALFOERT")
+        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "1234",
@@ -108,27 +108,6 @@ class PleiepengerJoarkTest {
             request = request,
             expectedResponse = expectedResponse,
             expectedCode = HttpStatusCode.Created
-        )
-    }
-
-    @Test(expected = IllegalStateException::class)
-    fun `gyldig melding til joark som kun blir midlertidig jorunalfoert gir feil`() {
-        val sakId =  "56789"
-
-        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
-
-        val request = MeldingV1(
-            aktoerId = "12345",
-            sakId = sakId,
-            mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
-                getDokumentUrl("1234"),
-                getDokumentUrl("5678")
-            )
-        )
-
-        requestAndAssert(
-            request = request
         )
     }
 
