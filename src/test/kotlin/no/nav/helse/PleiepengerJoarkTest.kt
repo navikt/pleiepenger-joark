@@ -90,6 +90,11 @@ class PleiepengerJoarkTest {
     @Test
     fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
         val sakId =  "5678"
+        val jpegDokumentId = "1234" // Default mocket som JPEG
+        val pdfDokumentId = "4567"
+        WiremockWrapper.stubGetDokumentPdf(pdfDokumentId)
+        val jsonDokumentId = "78910"
+        WiremockWrapper.stubGetDokumentJson(jsonDokumentId)
 
         WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
 
@@ -98,8 +103,13 @@ class PleiepengerJoarkTest {
             sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
-                getDokumentUrl("1234"),
-                getDokumentUrl("5678")
+                listOf(
+                    getDokumentUrl(pdfDokumentId),
+                    getDokumentUrl(jsonDokumentId)
+                ),
+                listOf(
+                    getDokumentUrl(jpegDokumentId)
+                )
             )
         )
         val expectedResponse = JournalforingResponse(journalPostId = "1234")
@@ -118,10 +128,10 @@ class PleiepengerJoarkTest {
             aktoerId = "12345",
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
+            dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
                 getDokumentUrl("5678")
-            )
+            ))
         )
 
         requestAndAssert(
@@ -136,10 +146,10 @@ class PleiepengerJoarkTest {
             aktoerId = "12345",
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
+            dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
                 getDokumentUrl("5678")
-            )
+            ))
         )
 
         requestAndAssert(
@@ -155,10 +165,10 @@ class PleiepengerJoarkTest {
             aktoerId = "12345",
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
+            dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
                 getDokumentUrl("5678")
-            )
+            ))
         )
 
         requestAndAssert(
@@ -174,10 +184,10 @@ class PleiepengerJoarkTest {
             aktoerId = "",
             sakId = "45678",
             mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(
+            dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
                 getDokumentUrl("5678")
-            )
+            ))
         )
 
         requestAndAssert(

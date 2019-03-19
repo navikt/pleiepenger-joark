@@ -26,7 +26,7 @@ object JournalPostRequestV1Factory {
         kanal: Kanal,
         sakId: SakId,
         fagSystem: FagSystem,
-        dokumenter: List<Dokument>,
+        dokumenter: List<List<Dokument>>,
         mottatt: ZonedDateTime,
         typeReferanse: TypeReferanse) : JournalPostRequest {
 
@@ -49,17 +49,16 @@ object JournalPostRequestV1Factory {
         var hovedDokument : JoarkDokument? = null
         val vedlegg = mutableListOf<JoarkDokument>()
 
-        dokumenter.forEach { dokument ->
+        dokumenter.forEach { dokumentBolk ->
             if (hovedDokument == null) {
-                hovedDokument = mapDokument(dokument, typeReferanse)
+                hovedDokument = mapDokument(dokumentBolk, typeReferanse)
             } else {
-                vedlegg.add(mapDokument(dokument, typeReferanse))
+                vedlegg.add(mapDokument(dokumentBolk, typeReferanse))
             }
         }
 
         return JournalPostRequest(
-            // Så lenge det blir opprettet jorunalføringsoppgave i Gosys settes denne til false. Om et av dokumentene har ArkivFilType.JSON eller ArkivFilType.XML må denne også være false..
-            // Noe uklart hvordan det da skal kunne løses med "automatisk journalføring" når vi ønsker det..
+            // Så lenge det blir opprettet jorunalføringsoppgave i Gosys settes denne til false.
             forsokEndeligJF = false,
             forsendelseInformasjon = forsendelseInformasjon,
             dokumentInfoHoveddokument = hovedDokument!!,
@@ -84,38 +83,39 @@ object JournalPostRequestV1Factory {
         ))
     }
 
-    private fun mapDokument(dokument : Dokument, typeReferanse: TypeReferanse) : JoarkDokument {
-        val arkivFilType = getArkivFilType(dokument)
-        val dokumentVariant = listOf(
-            DokumentVariant(
-                arkivFilType = arkivFilType,
-                variantFormat = getVariantFormat(
-                    arkivFilType
-                ),
-                dokument = dokument.content
+    private fun mapDokument(dokumentBolk : List<Dokument>, typeReferanse: TypeReferanse) : JoarkDokument {
+        val title = dokumentBolk.first().title
+        val dokumenterVarianter = mutableListOf<DokumentVariant>()
+
+        dokumentBolk.forEach {
+            val arkivFilType = getArkivFilType(it)
+            dokumenterVarianter.add(
+                DokumentVariant(
+                    arkivFilType = arkivFilType,
+                    variantFormat = getVariantFormat(arkivFilType),
+                    dokument = it.content
+                )
             )
-        )
+        }
 
         when (typeReferanse) {
             is DokumentType -> {
                 return JoarkDokument(
-                    tittel = dokument.title,
+                    tittel = title,
                     dokumentTypeId = typeReferanse.value,
-                    dokumentVariant = dokumentVariant
+                    dokumentVariant = dokumenterVarianter.toList()
                 )
             }
             is BrevKode -> {
                 return JoarkDokument(
-                    tittel = dokument.title,
+                    tittel = title,
                     brevkode = typeReferanse.brevKode,
                     dokumentkategori = typeReferanse.dokumentKategori,
-                    dokumentVariant = dokumentVariant
+                    dokumentVariant = dokumenterVarianter.toList()
                 )
             }
             else -> throw IllegalStateException("Ikke støtttet type referense ${typeReferanse.javaClass.simpleName}")
         }
-
-
     }
 
     private fun getArkivFilType(dokument: Dokument) : ArkivFilType {

@@ -7,5 +7,5 @@ data class MeldingV1 (
     val aktoerId: String,
     val mottatt: ZonedDateTime,
     val sakId: String,
-    val dokumenter: List<URL>
+    val dokumenter: List<List<URL>>
 )

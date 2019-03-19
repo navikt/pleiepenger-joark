@@ -1,6 +1,7 @@
 package no.nav.helse.journalforing.v1
 
 import no.nav.helse.CorrelationId
+import no.nav.helse.dokument.Dokument
 import no.nav.helse.dokument.DokumentService
 import no.nav.helse.journalforing.*
 import no.nav.helse.journalforing.gateway.JournalforingGateway
@@ -36,11 +37,17 @@ class JournalforingV1Service(
         logger.trace("Journalfører for AktørID $aktoerId")
 
         logger.trace("Henter dokumenter")
-        val dokumenter = dokumentService.hentDokumenter(
-            urls = melding.dokumenter,
-            correlationId = correlationId,
-            aktoerId = aktoerId
-        )
+        val alleDokumenter = mutableListOf<List<Dokument>>()
+        melding.dokumenter.forEach {
+            alleDokumenter.add(
+                dokumentService.hentDokumenter(
+                    urls = it,
+                    correlationId = correlationId,
+                    aktoerId = aktoerId
+                )
+            )
+        }
+
 
         logger.trace("Genrerer request til Joark")
         val request = JournalPostRequestV1Factory.instance(
@@ -50,7 +57,7 @@ class JournalforingV1Service(
             kanal = NAV_NO_KANAL,
             sakId = SakId(melding.sakId),
             fagSystem = GOSYS_FAGSYSTEM,
-            dokumenter = dokumenter,
+            dokumenter = alleDokumenter.toList(),
             mottatt = melding.mottatt,
             typeReferanse = PLEIEPENGER_SOKNAD_BREV_KODE
         )
@@ -68,6 +75,13 @@ class JournalforingV1Service(
         if (melding.dokumenter.isEmpty()) {
             brudd.add(Brudd(parameter = "dokument", error = "Det må sendes minst ett dokument"))
         }
+
+        melding.dokumenter.forEach {
+            if (it.isEmpty()) {
+                brudd.add(Brudd(parameter = "dokument_bolk", error = "Det må være minst et dokument i en dokument bolk."))
+            }
+        }
+
         if (!melding.aktoerId.matches(ONLY_DIGITS)) {
             brudd.add(Brudd("aktoer_id", error = "${melding.aktoerId} er ikke en gyldig AktørID. Kan kun være siffer."))
         }
