@@ -61,13 +61,9 @@ object WiremockWrapper {
     }
 
     fun stubMottaInngaaendeForsendelseOk(
-        sakId: String,
         tilstand: String) {
         WireMock.stubFor(
             WireMock.post(WireMock.urlMatching(".*$dokmotinngaaendeMottaInngaaendeForsendelsePath"))
-                .withRequestBody(ContainsPattern("""
-                    "arkivSakId" : "$sakId"
-                    """.trimIndent()))
                 .willReturn(
                     WireMock.aResponse()
                         .withStatus(200)

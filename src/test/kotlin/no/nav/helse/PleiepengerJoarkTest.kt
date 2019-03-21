@@ -89,18 +89,16 @@ class PleiepengerJoarkTest {
 
     @Test
     fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
-        val sakId =  "5678"
         val jpegDokumentId = "1234" // Default mocket som JPEG
         val pdfDokumentId = "4567"
         WiremockWrapper.stubGetDokumentPdf(pdfDokumentId)
         val jsonDokumentId = "78910"
         WiremockWrapper.stubGetDokumentJson(jsonDokumentId)
 
-        WiremockWrapper.stubMottaInngaaendeForsendelseOk(sakId = sakId, tilstand = "MIDLERTIDIG_JOURNALFOERT")
+        WiremockWrapper.stubMottaInngaaendeForsendelseOk(tilstand = "MIDLERTIDIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "1234",
-            sakId = sakId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(
                 listOf(
@@ -126,7 +124,6 @@ class PleiepengerJoarkTest {
 
         val request = MeldingV1(
             aktoerId = "12345",
-            sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
@@ -144,7 +141,6 @@ class PleiepengerJoarkTest {
     fun `mangler authorization header`() {
         val request = MeldingV1(
             aktoerId = "12345",
-            sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
@@ -163,7 +159,6 @@ class PleiepengerJoarkTest {
     fun `request fra ikke tillatt system`() {
         val request = MeldingV1(
             aktoerId = "12345",
-            sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
@@ -182,7 +177,6 @@ class PleiepengerJoarkTest {
     fun `ugyldig aktoerID skal feile`() {
         val request = MeldingV1(
             aktoerId = "",
-            sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf(listOf(
                 getDokumentUrl("1234"),
@@ -199,7 +193,6 @@ class PleiepengerJoarkTest {
     fun `melding maa inneholde minst et dokument`() {
         val request = MeldingV1(
             aktoerId = "123456",
-            sakId = "45678",
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf()
         )

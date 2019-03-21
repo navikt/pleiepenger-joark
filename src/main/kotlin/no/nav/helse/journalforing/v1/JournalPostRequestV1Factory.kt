@@ -6,6 +6,7 @@ import no.nav.helse.journalforing.gateway.*
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.util.*
 import kotlin.IllegalStateException
 
 private const val AKTOR_ID_KEY = "aktoer"
@@ -24,8 +25,6 @@ object JournalPostRequestV1Factory {
         mottaker: AktoerId,
         tema: Tema,
         kanal: Kanal,
-        sakId: SakId,
-        fagSystem: FagSystem,
         dokumenter: List<List<Dokument>>,
         mottatt: ZonedDateTime,
         typeReferanse: TypeReferanse) : JournalPostRequest {
@@ -39,11 +38,10 @@ object JournalPostRequestV1Factory {
             bruker = lagAktorStruktur(aktorId = mottaker),
             avsender = lagAktorStruktur(aktorId = mottaker), // I Versjon 1 er det kun innlogget bruker som laster opp vedlegg og fyller ut søknad, så bruker == avsender
             tema = tema.value,
-            kanalReferanseId = "${fagSystem.kode}-${sakId.value}", // I Versjon 1 settes ID fra sak som kanalReferenseId - Om flere journalføringer blir gjort på en sak er ikke denne unik...
+            kanalReferanseId = UUID.randomUUID().toString(), // Har ingen unik ID å sette her..
             forsendelseMottatt = formatDate(mottatt),
             forsendelseInnsendt = formatDate(ZonedDateTime.now()),
-            mottaksKanal = kanal.value,
-            arkivSak = ArkivSak(arkivSakId = sakId.value, arkivSakSystem = fagSystem.kode)
+            mottaksKanal = kanal.value
         )
 
         var hovedDokument : JoarkDokument? = null

@@ -27,7 +27,8 @@ class PleiepengerJoarkWithoutMocks {
                 dokmotinngaaendeUrl = "https://dokmotinngaaende-q1.nais.preprod.local",
                 jwkSetUrl = "https://security-token-service.nais.preprod.local/rest/v1/sts/jwks",
                 issuer = "https://security-token-service.nais.preprod.local",
-                authorizedSystems = "srvpps-prosessering,srvpleiepenger-joark"
+                authorizedSystems = "srvpps-prosessering,srvpleiepenger-joark",
+                clientSecret = null
             ))
 
 

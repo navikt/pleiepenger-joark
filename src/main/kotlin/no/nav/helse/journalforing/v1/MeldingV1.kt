@@ -6,6 +6,5 @@ import java.time.ZonedDateTime
 data class MeldingV1 (
     val aktoerId: String,
     val mottatt: ZonedDateTime,
-    val sakId: String,
     val dokumenter: List<List<URL>>
 )

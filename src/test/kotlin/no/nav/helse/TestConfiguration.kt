@@ -11,17 +11,23 @@ object TestConfiguration {
         tokenUrl : String? = wireMockServer?.getTokenUrl(),
         dokmotinngaaendeUrl : String? = wireMockServer?.getDokmotinngaaendeUrl(),
         issuer : String? = wireMockServer?.baseUrl(),
-        authorizedSystems : String? = wireMockServer?.getSubject()
+        authorizedSystems : String? = wireMockServer?.getSubject(),
+        clientSecret: String? = "foo"
     ) : Map<String, String>{
-        return mapOf(
+        val map = mutableMapOf(
             Pair("ktor.deployment.port","$port"),
             Pair("nav.authorization.token_url","$tokenUrl"),
             Pair("nav.authorization.jwks_url","$jwkSetUrl"),
             Pair("nav.authorization.issuer","$issuer"),
             Pair("nav.rest_api.authorized_systems","$authorizedSystems"),
-            Pair("nav.dokmotinngaaende_base_url", "$dokmotinngaaendeUrl"),
-            Pair("nav.authorization.service_account.client_secret", "foo")
+            Pair("nav.dokmotinngaaende_base_url", "$dokmotinngaaendeUrl")
         )
+
+        if (clientSecret != null) {
+            map["nav.authorization.service_account.client_secret"] = clientSecret
+        }
+
+        return map.toMap()
     }
 
     fun asArray(map : Map<String, String>) : Array<String>  {

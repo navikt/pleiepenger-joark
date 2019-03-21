@@ -8,7 +8,6 @@ Kan også sende samme request som kommer på kafka-topic som et REST API-kall ti
 ### Meldingsformat
 - aktoer_id : AtkørID for personen dokumentene skal journalføres på
 - mottatt : tidspunkt for når dokumentene er mottatt på ISO8601 format
-- sak_id : Id opprettet ved opprettelse av sak (pleiepenger-sak)
 - dokumenter : En liste med lister av URL'er til dokumenter som skal journalføres som må peke på "pleiepenger-dokument"
 - dokumenter : Må inneholde minst en liste, og hvert liste må inneholde minst en entry.
 - dokumenter[0] : Vil bli "Hoveddokument" i Joark
@@ -18,7 +17,6 @@ Kan også sende samme request som kommer på kafka-topic som et REST API-kall ti
 {
 	"aktoer_id": "123561458",
 	"mottatt": "2018-12-18T20:43:32Z",
-	"sak_id": "1234654",
 	"dokumenter": [
 		[
 			"https://pleiepenger-dokument.nav.no/dokument/c049520b-eed9-42d0-8d48-b7c8e6e1467e",

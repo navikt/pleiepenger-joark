@@ -15,7 +15,6 @@ private val logger: Logger = LoggerFactory.getLogger("nav.JournalforingV1Service
 private val OMSORG_TEMA = Tema("OMS")
 private val NAV_NO_KANAL = Kanal("NAV_NO")
 private val PLEIEPENGER_SOKNAD_BREV_KODE = BrevKode(brevKode = "NAV 09-11.05", dokumentKategori = "SOK")
-private val GOSYS_FAGSYSTEM = FagSystem("GOSYS","FS22")
 private val JOURNALFORING_TITTEL = "Søknad om pleiepenger – sykt barn - NAV 09-11.05"
 
 private val ONLY_DIGITS = Regex("\\d+")
@@ -55,8 +54,6 @@ class JournalforingV1Service(
             mottaker = aktoerId,
             tema = OMSORG_TEMA,
             kanal = NAV_NO_KANAL,
-            sakId = SakId(melding.sakId),
-            fagSystem = GOSYS_FAGSYSTEM,
             dokumenter = alleDokumenter.toList(),
             mottatt = melding.mottatt,
             typeReferanse = PLEIEPENGER_SOKNAD_BREV_KODE
