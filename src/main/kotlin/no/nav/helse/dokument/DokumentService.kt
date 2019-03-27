@@ -65,6 +65,5 @@ class DokumentService(
 private fun List<Dokument>.tellContentType() {
     forEach {
         dokumentContentTypeCounter.labels(it.contentType).inc()
-        dokumentContentTypeCounter.labels("total").inc()
     }
 }
