@@ -1,6 +1,7 @@
 package no.nav.helse
 
 import com.auth0.jwk.JwkProviderBuilder
+import com.fasterxml.jackson.databind.DeserializationFeature
 import io.ktor.application.*
 import io.ktor.auth.Authentication
 import io.ktor.auth.authenticate
@@ -10,70 +11,47 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.apache.Apache
 import io.ktor.client.features.json.JacksonSerializer
 import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.features.logging.Logging
 import io.ktor.features.*
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.jackson
-import io.ktor.request.header
-import io.ktor.response.header
 import io.ktor.routing.Routing
 import io.ktor.util.KtorExperimentalAPI
-import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.hotspot.DefaultExports
 import no.nav.helse.dokument.DokumentGateway
 import no.nav.helse.dokument.DokumentService
 import no.nav.helse.dokument.ContentTypeService
+import no.nav.helse.dusseldorf.ktor.client.MonitoredHttpClient
+import no.nav.helse.dusseldorf.ktor.client.Oauth2ClientCredentialsProvider
+import no.nav.helse.dusseldorf.ktor.client.setProxyRoutePlanner
+import no.nav.helse.dusseldorf.ktor.client.sl4jLogger
+import no.nav.helse.dusseldorf.ktor.core.*
+import no.nav.helse.dusseldorf.ktor.health.HealthRoute
+import no.nav.helse.dusseldorf.ktor.health.HttpRequestHealthCheck
+import no.nav.helse.dusseldorf.ktor.health.SystemCredentialsProviderHealthCheck
+import no.nav.helse.dusseldorf.ktor.jackson.JacksonStatusPages
+import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
+import no.nav.helse.dusseldorf.ktor.metrics.CallMonitoring
+import no.nav.helse.dusseldorf.ktor.metrics.MetricsRoute
 import no.nav.helse.journalforing.api.journalforingApis
-import no.nav.helse.journalforing.api.metadataStatusPages
 import no.nav.helse.journalforing.converter.Image2PDFConverter
 import no.nav.helse.journalforing.gateway.JournalforingGateway
 import no.nav.helse.journalforing.v1.JournalforingV1Service
-import no.nav.helse.systembruker.SystembrukerGateway
-import no.nav.helse.systembruker.SystembrukerService
-import no.nav.helse.validering.valideringStatusPages
-import org.apache.http.impl.conn.SystemDefaultRoutePlanner
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.ProxySelector
-import java.util.*
 import java.util.concurrent.TimeUnit
 
-private const val APP = "pliepenger-joark"
 private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoark")
-private const val GENERATED_REQUEST_ID_PREFIX = "generated-"
 
 fun main(args: Array<String>): Unit  = io.ktor.server.netty.EngineMain.main(args)
 
 @KtorExperimentalAPI
 fun Application.pleiepengerJoark() {
-    val collectorRegistry = CollectorRegistry.defaultRegistry
+    val appId = environment.config.id()
+    logProxyProperties()
     DefaultExports.initialize()
 
-    val joarkHttpClient = HttpClient(Apache) {
-        install(JsonFeature) {
-            serializer = JacksonSerializer{
-                ObjectMapper.joark(this)
-            }
-        }
-        engine {
-            customizeClient { setProxyRoutePlanner() }
-        }
-    }
-    val systembrukerOgDokumentHttpClient = HttpClient(Apache) {
-        install(JsonFeature) {
-            serializer = JacksonSerializer{
-                ObjectMapper.server(this)
-            }
-        }
-        engine {
-            customizeClient { setProxyRoutePlanner() }
-        }
-    }
-
     val configuration = Configuration(environment.config)
-    configuration.logIndirectlyUsedConfiguration()
-
     val authorizedSystems = configuration.getAuthorizedSystemsForRestApi()
 
     val jwkProvider = JwkProviderBuilder(configuration.getJwksUrl())
@@ -85,7 +63,7 @@ fun Application.pleiepengerJoark() {
     install(Authentication) {
         jwt {
             verifier(jwkProvider, configuration.getIssuer())
-            realm = APP
+            realm = appId
             validate { credentials ->
                 logger.info("authorization attempt for ${credentials.payload.subject}")
                 if (credentials.payload.subject in authorizedSystems) {
@@ -100,35 +78,46 @@ fun Application.pleiepengerJoark() {
 
     install(ContentNegotiation) {
         jackson {
-            ObjectMapper.server(this)
+            dusseldorfConfigured()
         }
     }
 
     install(StatusPages) {
-        defaultStatusPages()
-        valideringStatusPages()
-        metadataStatusPages()
+        DefaultStatusPages()
+        JacksonStatusPages()
     }
 
-    val systembrukerService = SystembrukerService(
-        systembrukerGateway = SystembrukerGateway(
-            httpClient = systembrukerOgDokumentHttpClient,
-            clientId = configuration.getServiceAccountClientId(),
-            clientSecret = configuration.getServiceAccountClientSecret(),
-            scopes = configuration.getServiceAccountScopes(),
-            tokenUrl = configuration.getTokenUrl()
-        )
+    val systemCredentialsProvider = Oauth2ClientCredentialsProvider(
+        monitoredHttpClient = MonitoredHttpClient(
+            source = appId,
+            destination = "nais-sts",
+            httpClient = HttpClient(Apache) {
+                install(JsonFeature) {
+                    serializer = JacksonSerializer {
+                        configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    }
+                }
+                install (Logging) {
+                     sl4jLogger("nais-sts")
+                }
+                engine {
+                    customizeClient { setProxyRoutePlanner() }
+                }
+            }
+        ),
+        tokenUrl = configuration.getTokenUrl(),
+        clientId = configuration.getServiceAccountClientId(),
+        clientSecret = configuration.getServiceAccountClientSecret(),
+        scopes = configuration.getServiceAccountScopes()
     )
 
     val journalforingGateway = JournalforingGateway(
-        httpClient = joarkHttpClient,
         baseUrl = configuration.getDokmotinngaaendeBaseUrl(),
-        systembrukerService = systembrukerService
+        systemCredentialsProvider = systemCredentialsProvider
     )
 
     val dokumentGateway = DokumentGateway(
-        httpClient = systembrukerOgDokumentHttpClient,
-        systembrukerService = systembrukerService
+        systemCredentialsProvider = systemCredentialsProvider
     )
 
     install(Routing) {
@@ -144,37 +133,34 @@ fun Application.pleiepengerJoark() {
                 )
             )
         }
-        monitoring(
-            collectorRegistry = collectorRegistry,
-            healthChecks = listOf(
-                systembrukerService,
-                dokumentGateway,
-                journalforingGateway
-            ),
-            healthCheckUrls = mapOf(
-                Pair(configuration.getJwksUrl(), HttpStatusCode.OK)
+        MetricsRoute()
+        DefaultProbeRoutes()
+        HealthRoute(
+            healthChecks = setOf(
+                HttpRequestHealthCheck(
+                    app = appId,
+                    urlExpectedHttpStatusCodeMap = mapOf(
+                        Pair(configuration.getJwksUrl(), HttpStatusCode.OK)
+                    )
+                ),
+                SystemCredentialsProviderHealthCheck(
+                    systemCredentialsProvider = systemCredentialsProvider
+                )
             )
         )
     }
 
-    install(MonitorReceivedHttpRequestsFeature) {
-        app = APP
+    install(CallMonitoring) {
+        app = appId
     }
 
     install(CallId) {
-        header(HttpHeaders.XCorrelationId)
+        fromXCorrelationIdHeader()
+        ensureSet()
     }
 
     install(CallLogging) {
-        callIdMdc("correlation_id")
-        mdc("request_id") { call ->
-            val requestId = call.request.header(HttpHeaders.XRequestId)?.removePrefix(GENERATED_REQUEST_ID_PREFIX) ?: "$GENERATED_REQUEST_ID_PREFIX${UUID.randomUUID()}"
-            call.response.header(HttpHeaders.XRequestId, requestId)
-            requestId
-        }
+        correlationIdAndRequestIdInMdc()
+        logRequests()
     }
-}
-
-fun HttpAsyncClientBuilder.setProxyRoutePlanner() {
-    setRoutePlanner(SystemDefaultRoutePlanner(ProxySelector.getDefault()))
 }

@@ -1,10 +1,6 @@
 package no.nav.helse.dokument
 
 import io.prometheus.client.Counter
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import no.nav.helse.CorrelationId
 import no.nav.helse.journalforing.AktoerId
 import no.nav.helse.journalforing.converter.Image2PDFConverter
@@ -30,20 +26,11 @@ class DokumentService(
                                aktoerId: AktoerId,
                                correlationId: CorrelationId): List<Dokument> {
         logger.trace("Henter ${urls.size} dokumenter.")
-        val alleDokumenter = coroutineScope {
-            val futures = mutableListOf<Deferred<Dokument>>()
-            urls.forEach {
-                futures.add(async {
-                    dokumentGateway.hentDokument(
-                        url = it,
-                        correlationId = correlationId,
-                        aktoerId = aktoerId
-                    )
-                })
-
-            }
-            futures.awaitAll()
-        }
+        val alleDokumenter = dokumentGateway.hentDokumenter(
+            urls =urls,
+            aktoerId = aktoerId,
+            correlationId = correlationId
+        )
 
         alleDokumenter.tellContentType()
 

@@ -1,6 +1,6 @@
 package no.nav.helse
 
-import com.fasterxml.jackson.module.kotlin.readValue
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.typesafe.config.ConfigFactory
 import io.ktor.config.ApplicationConfig
@@ -13,14 +13,13 @@ import io.ktor.server.testing.createTestEnvironment
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.helse.journalforing.api.JournalforingResponse
-import no.nav.helse.journalforing.api.ManglerCorrelationId
+import no.nav.helse.dusseldorf.ktor.core.Throwblem
+import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
 import no.nav.helse.journalforing.v1.MeldingV1
-import no.nav.helse.validering.Valideringsfeil
+import org.json.JSONObject
 import org.junit.AfterClass
 import org.junit.BeforeClass
-import org.junit.FixMethodOrder
-import org.junit.runners.MethodSorters
+import org.skyscreamer.jsonassert.JSONAssert
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URL
@@ -30,14 +29,13 @@ import kotlin.test.*
 private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoarkTest")
 
 @KtorExperimentalAPI
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 class PleiepengerJoarkTest {
 
     @KtorExperimentalAPI
     private companion object {
 
         private val wireMockServer: WireMockServer = WiremockWrapper.bootstrap()
-        private val objectMapper = ObjectMapper.server()
+        private val objectMapper = jacksonObjectMapper().dusseldorfConfigured()
         private val authorizedAccessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
 
         fun getConfig() : ApplicationConfig {
@@ -48,11 +46,9 @@ class PleiepengerJoarkTest {
             return HoconApplicationConfig(mergedConfig)
         }
 
-
         val engine = TestApplicationEngine(createTestEnvironment {
             config = getConfig()
         })
-
 
         @BeforeClass
         @JvmStatic
@@ -70,7 +66,7 @@ class PleiepengerJoarkTest {
     }
 
     @Test
-    fun `z_ test isready, isalive og metrics`() {
+    fun `test isready, isalive og metrics`() {
         with(engine) {
             handleRequest(HttpMethod.Get, "/isready") {}.apply {
                 assertEquals(HttpStatusCode.OK, response.status())
@@ -110,18 +106,20 @@ class PleiepengerJoarkTest {
                 )
             )
         )
-        val expectedResponse = JournalforingResponse(journalPostId = "1234")
 
         requestAndAssert(
             request = request,
-            expectedResponse = expectedResponse,
+            expectedResponse = """
+                {
+                    "journal_post_id" : "1234"
+                }
+            """.trimIndent(),
             expectedCode = HttpStatusCode.Created
         )
     }
 
-    @Test(expected = ManglerCorrelationId::class)
+    @Test
     fun `melding uten correlation id skal feile`() {
-
         val request = MeldingV1(
             aktoerId = "12345",
             mottatt = ZonedDateTime.now(),
@@ -131,9 +129,28 @@ class PleiepengerJoarkTest {
             ))
         )
 
+
         requestAndAssert(
             request = request,
-            leggTilCorrelationId = false
+            leggTilCorrelationId = false,
+            expectedCode = HttpStatusCode.BadRequest,
+            expectedResponse = """
+                {
+                    "type": "/problem-details/invalid-request-parameters",
+                    "title": "invalid-request-parameters",
+                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "status": 400,
+                    "instance": "about:blank",
+                    "invalid_parameters" : [
+                        {
+                            "name" : "X-Correlation-ID",
+                            "reason" : "Correlation ID må settes.",
+                            "type": "header",
+                            "invalid_value": null
+                        }
+                    ]
+                }
+            """.trimIndent()
         )
     }
 
@@ -151,7 +168,8 @@ class PleiepengerJoarkTest {
         requestAndAssert(
             request = request,
             leggTilAuthorization = false,
-            expectedCode = HttpStatusCode.Unauthorized
+            expectedCode = HttpStatusCode.Unauthorized,
+            expectedResponse = null
         )
     }
 
@@ -169,64 +187,114 @@ class PleiepengerJoarkTest {
         requestAndAssert(
             request = request,
             expectedCode = HttpStatusCode.Unauthorized,
-            accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized")
+            accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized"),
+            expectedResponse = null
         )
     }
 
-    @Test(expected = Valideringsfeil::class)
-    fun `ugyldig aktoerID skal feile`() {
+    @Test
+    fun `melding uten dokumenter skal feile`() {
+        val aktoerId = "123456F"
         val request = MeldingV1(
-            aktoerId = "",
-            mottatt = ZonedDateTime.now(),
-            dokumenter = listOf(listOf(
-                getDokumentUrl("1234"),
-                getDokumentUrl("5678")
-            ))
-        )
-
-        requestAndAssert(
-            request = request
-        )
-    }
-
-    @Test(expected = Valideringsfeil::class)
-    fun `melding maa inneholde minst et dokument`() {
-        val request = MeldingV1(
-            aktoerId = "123456",
+            aktoerId = aktoerId,
             mottatt = ZonedDateTime.now(),
             dokumenter = listOf()
         )
 
         requestAndAssert(
-            request = request
+            request = request,
+            expectedCode = HttpStatusCode.BadRequest,
+            expectedResponse = """
+                {
+                    "type": "/problem-details/invalid-request-parameters",
+                    "title": "invalid-request-parameters",
+                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "status": 400,
+                    "instance": "about:blank",
+                    "invalid_parameters" : [
+                        {
+                            "name" : "aktoer_id",
+                            "reason" : "Ugyldig AktørID. Kan kun være siffer.",
+                            "type": "entity",
+                            "invalid_value": "$aktoerId"
+                        },
+                        {
+                            "name" : "dokument",
+                            "reason" : "Det må sendes minst ett dokument",
+                            "type": "entity",
+                            "invalid_value": []
+                        }
+                    ]
+                }
+            """.trimIndent()
         )
     }
+
+    @Test
+    fun `melding med tomme dokumentbolker skal feile`() {
+        val aktoerId = "123456"
+        val request = MeldingV1(
+            aktoerId = aktoerId,
+            mottatt = ZonedDateTime.now(),
+            dokumenter = listOf(
+                listOf(getDokumentUrl("1234")),
+                listOf()
+            )
+        )
+
+        requestAndAssert(
+            request = request,
+            expectedCode = HttpStatusCode.BadRequest,
+            expectedResponse = """
+                {
+                    "type": "/problem-details/invalid-request-parameters",
+                    "title": "invalid-request-parameters",
+                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "status": 400,
+                    "instance": "about:blank",
+                    "invalid_parameters" : [
+                        {
+                            "name" : "dokument_bolk",
+                            "reason" : "Det må være minst et dokument i en dokument bolk.",
+                            "type": "entity",
+                            "invalid_value": []
+                        }
+                    ]
+                }
+            """.trimIndent()
+        )
+    }
+
 
     private fun getDokumentUrl(dokumentId : String) : URL{
         return URL("${wireMockServer.getPleiepengerDokumentUrl()}/$dokumentId")
     }
 
     private fun requestAndAssert(request : MeldingV1,
-                                 expectedResponse : JournalforingResponse? = null,
-                                 expectedCode : HttpStatusCode? = null,
+                                 expectedResponse : String?,
+                                 expectedCode : HttpStatusCode,
                                  leggTilCorrelationId : Boolean = true,
                                  leggTilAuthorization : Boolean = true,
                                  accessToken : String = authorizedAccessToken) {
         with(engine) {
-            handleRequest(HttpMethod.Post, "/v1/journalforing") {
-                if (leggTilAuthorization) {
-                    addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+            try {
+                handleRequest(HttpMethod.Post, "/v1/journalforing") {
+                    if (leggTilAuthorization) {
+                        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
+                    }
+                    if (leggTilCorrelationId) {
+                        addHeader(HttpHeaders.XCorrelationId, "123156")
+                    }
+                    addHeader(HttpHeaders.ContentType, "application/json")
+                    setBody(objectMapper.writeValueAsString(request))
+                }.apply {
+                    assertEquals(expectedCode, response.status())
+                    if (expectedResponse == null) assertEquals(expectedResponse, response.content)
+                    else JSONAssert.assertEquals(expectedResponse, response.content!!, false)
                 }
-                if (leggTilCorrelationId) {
-                    addHeader(HttpHeaders.XCorrelationId, "123156")
-                }
-                addHeader(HttpHeaders.ContentType, "application/json")
-                setBody(objectMapper.writeValueAsString(request))
-            }.apply {
-                assertEquals(expectedCode, response.status())
-                if (expectedResponse != null) {
-                    assertEquals(expectedResponse, objectMapper.readValue(response.content!!))
-                }
+            } catch (cause : Throwblem) {
+                assertEquals(expectedCode.value, cause.getProblemDetails().status)
+                JSONAssert.assertEquals(JSONObject(cause.getProblemDetails().asMap()), JSONObject(expectedResponse), false)
             }
         }
     }
