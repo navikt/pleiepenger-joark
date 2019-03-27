@@ -31,7 +31,7 @@ class DokumentGateway(
         source = "pleiepenger-joark",
         destination = "pleiepenger-dokument",
         overridePaths = mapOf(
-            Pair(Regex("/dokument/.*"), "/dokument")
+            Pair(Regex("/v1/dokument/.*"), "/dokument")
         ),
         httpClient = HttpClient(Apache) {
             install(JsonFeature) {
