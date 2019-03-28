@@ -2,7 +2,7 @@ import org.gradle.internal.impldep.org.fusesource.jansi.AnsiRenderer.test
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.1.3.8f419db" // TODO: a31075d når den er tilgjengelig på maven central
+val dusseldorfKtorVersion = "1.1.3.a31075d"
 val wiremockVersion = "2.19.0"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
