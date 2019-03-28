@@ -21,14 +21,9 @@ import io.prometheus.client.hotspot.DefaultExports
 import no.nav.helse.dokument.DokumentGateway
 import no.nav.helse.dokument.DokumentService
 import no.nav.helse.dokument.ContentTypeService
-import no.nav.helse.dusseldorf.ktor.client.MonitoredHttpClient
-import no.nav.helse.dusseldorf.ktor.client.Oauth2ClientCredentialsProvider
-import no.nav.helse.dusseldorf.ktor.client.setProxyRoutePlanner
-import no.nav.helse.dusseldorf.ktor.client.sl4jLogger
+import no.nav.helse.dusseldorf.ktor.client.*
 import no.nav.helse.dusseldorf.ktor.core.*
 import no.nav.helse.dusseldorf.ktor.health.HealthRoute
-import no.nav.helse.dusseldorf.ktor.health.HttpRequestHealthCheck
-import no.nav.helse.dusseldorf.ktor.health.SystemCredentialsProviderHealthCheck
 import no.nav.helse.dusseldorf.ktor.jackson.JacksonStatusPages
 import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
 import no.nav.helse.dusseldorf.ktor.metrics.CallMonitoring
@@ -120,18 +115,22 @@ fun Application.pleiepengerJoark() {
         systemCredentialsProvider = systemCredentialsProvider
     )
 
+    install(CallIdRequired)
+
     install(Routing) {
         authenticate {
-            journalforingApis(
-                journalforingV1Service = JournalforingV1Service(
-                    journalforingGateway = journalforingGateway,
-                    dokumentService = DokumentService(
-                        dokumentGateway = dokumentGateway,
-                        image2PDFConverter = Image2PDFConverter(),
-                        contentTypeService = ContentTypeService()
+            requiresCallId {
+                journalforingApis(
+                    journalforingV1Service = JournalforingV1Service(
+                        journalforingGateway = journalforingGateway,
+                        dokumentService = DokumentService(
+                            dokumentGateway = dokumentGateway,
+                            image2PDFConverter = Image2PDFConverter(),
+                            contentTypeService = ContentTypeService()
+                        )
                     )
                 )
-            )
+            }
         }
         MetricsRoute()
         DefaultProbeRoutes()
@@ -156,7 +155,6 @@ fun Application.pleiepengerJoark() {
 
     install(CallId) {
         fromXCorrelationIdHeader()
-        ensureSet()
     }
 
     install(CallLogging) {

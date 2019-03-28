@@ -2,7 +2,7 @@ import org.gradle.internal.impldep.org.fusesource.jansi.AnsiRenderer.test
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.1.3.ab74601"
+val dusseldorfKtorVersion = "1.1.3.8f419db" // TODO: a31075d når den er tilgjengelig på maven central
 val wiremockVersion = "2.19.0"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
@@ -11,7 +11,7 @@ plugins {
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/9a0939d9e7858e46df9e1e22602e1e1d8b342de5/gradle/dusseldorf-ktor.gradle.kts")
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/a31075dfd5242f4b33ebb8b4177ab96b4c89a436/gradle/dusseldorf-ktor.gradle.kts")
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.21")
     }

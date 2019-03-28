@@ -13,10 +13,8 @@ import io.ktor.server.testing.createTestEnvironment
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
-import no.nav.helse.dusseldorf.ktor.core.Throwblem
 import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
 import no.nav.helse.journalforing.v1.MeldingV1
-import org.json.JSONObject
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.skyscreamer.jsonassert.JSONAssert
@@ -138,7 +136,7 @@ class PleiepengerJoarkTest {
                 {
                     "type": "/problem-details/invalid-request-parameters",
                     "title": "invalid-request-parameters",
-                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "detail": "Requesten inneholder ugyldige paramtere.",
                     "status": 400,
                     "instance": "about:blank",
                     "invalid_parameters" : [
@@ -208,7 +206,7 @@ class PleiepengerJoarkTest {
                 {
                     "type": "/problem-details/invalid-request-parameters",
                     "title": "invalid-request-parameters",
-                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "detail": "Requesten inneholder ugyldige paramtere.",
                     "status": 400,
                     "instance": "about:blank",
                     "invalid_parameters" : [
@@ -249,7 +247,7 @@ class PleiepengerJoarkTest {
                 {
                     "type": "/problem-details/invalid-request-parameters",
                     "title": "invalid-request-parameters",
-                    "details": "Requesten inneholder ugyldige paramtere.",
+                    "detail": "Requesten inneholder ugyldige paramtere.",
                     "status": 400,
                     "instance": "about:blank",
                     "invalid_parameters" : [
@@ -277,24 +275,19 @@ class PleiepengerJoarkTest {
                                  leggTilAuthorization : Boolean = true,
                                  accessToken : String = authorizedAccessToken) {
         with(engine) {
-            try {
-                handleRequest(HttpMethod.Post, "/v1/journalforing") {
-                    if (leggTilAuthorization) {
-                        addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
-                    }
-                    if (leggTilCorrelationId) {
-                        addHeader(HttpHeaders.XCorrelationId, "123156")
-                    }
-                    addHeader(HttpHeaders.ContentType, "application/json")
-                    setBody(objectMapper.writeValueAsString(request))
-                }.apply {
-                    assertEquals(expectedCode, response.status())
-                    if (expectedResponse == null) assertEquals(expectedResponse, response.content)
-                    else JSONAssert.assertEquals(expectedResponse, response.content!!, false)
+            handleRequest(HttpMethod.Post, "/v1/journalforing") {
+                if (leggTilAuthorization) {
+                    addHeader(HttpHeaders.Authorization, "Bearer $accessToken")
                 }
-            } catch (cause : Throwblem) {
-                assertEquals(expectedCode.value, cause.getProblemDetails().status)
-                JSONAssert.assertEquals(JSONObject(cause.getProblemDetails().asMap()), JSONObject(expectedResponse), false)
+                if (leggTilCorrelationId) {
+                    addHeader(HttpHeaders.XCorrelationId, "123156")
+                }
+                addHeader(HttpHeaders.ContentType, "application/json")
+                setBody(objectMapper.writeValueAsString(request))
+            }.apply {
+                assertEquals(expectedCode, response.status())
+                if (expectedResponse == null) assertEquals(expectedResponse, response.content)
+                else JSONAssert.assertEquals(expectedResponse, response.content!!, false)
             }
         }
     }
