@@ -53,8 +53,7 @@ object WiremockWrapper {
 
         // Dokument
         stubGetDokument()
-
-        // dokmotinngaaende
+        stubDomotInngaaendeIsReady()
 
         logger.info("Mock available on '{}'", wireMockServer.baseUrl())
         return wireMockServer
@@ -75,6 +74,15 @@ object WiremockWrapper {
                             }
                         """.trimIndent())
                 )
+        )
+    }
+
+    private fun stubDomotInngaaendeIsReady() {
+        WireMock.stubFor(
+            WireMock.get(WireMock.urlMatching(".*$dokmotinngaaendeBasePath/isReady"))
+                .willReturn(
+                    WireMock.aResponse().withStatus(200)
+            )
         )
     }
 

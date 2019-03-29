@@ -14,6 +14,7 @@ import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.logging.Logging
 import io.ktor.features.*
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import io.ktor.jackson.jackson
 import io.ktor.routing.Routing
 import io.ktor.util.KtorExperimentalAPI
@@ -139,7 +140,8 @@ fun Application.pleiepengerJoark() {
                 HttpRequestHealthCheck(
                     app = appId,
                     urlExpectedHttpStatusCodeMap = mapOf(
-                        Pair(configuration.getJwksUrl(), HttpStatusCode.OK)
+                        configuration.getJwksUrl() to HttpStatusCode.OK,
+                        Url.buildURL(baseUrl = configuration.getDokmotinngaaendeBaseUrl(), pathParts = listOf("isReady")) to HttpStatusCode.OK
                     )
                 ),
                 SystemCredentialsProviderHealthCheck(
