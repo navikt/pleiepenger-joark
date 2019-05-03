@@ -2,18 +2,19 @@ import org.gradle.internal.impldep.org.fusesource.jansi.AnsiRenderer.test
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.1.3.2d0b51a"
+val dusseldorfKtorVersion = "1.1.5.8e08bec"
 val wiremockVersion = "2.19.0"
+val pdfBoxVersion = "2.0.15"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
 plugins {
-    kotlin("jvm") version "1.3.21"
+    kotlin("jvm") version "1.3.31"
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/2d0b51a6956d1ff797e37527232211027f6970ff/gradle/dusseldorf-ktor.gradle.kts")
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/8e08becd633431979814ddcc6e38be58ed1cb466/gradle/dusseldorf-ktor.gradle.kts")
     dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.21")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.31")
     }
 }
 
@@ -33,7 +34,7 @@ dependencies {
     compile ("io.ktor:ktor-client-jackson:$ktorVersion")
 
     // Bilde til PNG
-    compile("org.apache.pdfbox:pdfbox:2.0.13")
+    compile("org.apache.pdfbox:pdfbox:$pdfBoxVersion")
 
     // Test
     testCompile ("com.github.tomakehurst:wiremock:$wiremockVersion")
@@ -87,5 +88,5 @@ tasks.named<Jar>("jar") {
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "5.2.1"
+    gradleVersion = "5.4.1"
 }
