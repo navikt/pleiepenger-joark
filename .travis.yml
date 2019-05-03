@@ -1,57 +1,57 @@
 sudo: required
 language: java
 jdk:
-  - openjdk11
+- openjdk11
 services:
-  - docker
+- docker
 before_install:
-  - openssl aes-256-cbc -K $encrypted_14983aad41a0_key -iv $encrypted_14983aad41a0_iv
-    -in travis/helseci.key.enc -out travis/helseci.key -d
-  - git clone https://github.com/navikt/github-apps-support.git
-  - export PATH=`pwd`/github-apps-support/bin:$PATH
-  - export GH_TOKEN=$(generate-installation-token.sh `generate-jwt.sh ./travis/helseci.key
-    $GITHUB_APP_ID`)
-  - export COMMIT_SHORT=$(git rev-parse --short HEAD)
-  - export ORIGINAL_COMMITTER=$(git log -1 --pretty=format:'%an <%ae>')
-  - echo -e "machine github.com\n  login $GH_TOKEN" > ~/.netrc
+- openssl aes-256-cbc -K $encrypted_14983aad41a0_key -iv $encrypted_14983aad41a0_iv
+  -in travis/helseci.key.enc -out travis/helseci.key -d
+- git clone https://github.com/navikt/github-apps-support.git
+- export PATH=`pwd`/github-apps-support/bin:$PATH
+- export GH_TOKEN=$(generate-installation-token.sh `generate-jwt.sh ./travis/helseci.key
+  $GITHUB_APP_ID`)
+- export COMMIT_SHORT=$(git rev-parse --short HEAD)
+- export ORIGINAL_COMMITTER=$(git log -1 --pretty=format:'%an <%ae>')
+- echo -e "machine github.com\n  login $GH_TOKEN" > ~/.netrc
 script:
-  - "./gradlew check jar"
-  - docker build --pull -t $DOCKER_IMG_NAME:$COMMIT_SHORT .
-  - |
-    set -e
-    if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" = "master" ]; then
-      echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
-      docker push $DOCKER_IMG_NAME:$COMMIT_SHORT
+- "./gradlew check jar"
+- docker build --pull -t $DOCKER_IMG_NAME:$COMMIT_SHORT .
+- |
+  set -e
+  if [ "${TRAVIS_PULL_REQUEST}" = "false" ] && [ "${TRAVIS_BRANCH}" = "master" ]; then
+    echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+    docker push $DOCKER_IMG_NAME:$COMMIT_SHORT
 
-      git clone https://x-access-token:$GH_TOKEN@github.com/navikt/helse-iac.git
+    git clone https://x-access-token:$GH_TOKEN@github.com/navikt/helse-iac.git
 
-      cd helse-iac
-      ./set-image.sh preprod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
-      ./set-image.sh prod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
+    cd helse-iac
+    ./set-image.sh preprod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
+    ./set-image.sh prod/$APP_NAME/naiserator.yaml $DOCKER_IMG_NAME:$COMMIT_SHORT
 
-      git config user.name team-helse[bot]
-      git config user.email team-helse[bot]@users.noreply.github.com
+    git config user.name team-helse[bot]
+    git config user.email team-helse[bot]@users.noreply.github.com
 
-      git add preprod/$APP_NAME/naiserator.yaml
-      git add prod/$APP_NAME/naiserator.yaml
+    git add preprod/$APP_NAME/naiserator.yaml
+    git add prod/$APP_NAME/naiserator.yaml
 
-      git commit -m "Bump $APP_NAME" -m "Caused by $TRAVIS_BUILD_WEB_URL" --author "$ORIGINAL_COMMITTER"
+    git commit -m "Bump $APP_NAME" -m "Caused by $TRAVIS_BUILD_WEB_URL" --author "$ORIGINAL_COMMITTER"
 
-      git push https://x-access-token:$GH_TOKEN@github.com/navikt/helse-iac.git master
+    git push https://x-access-token:$GH_TOKEN@github.com/navikt/helse-iac.git master
 
-      cd ..
-      fi
+    cd ..
+    fi
 before_cache:
-  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
-  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+- rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+- rm -fr $HOME/.gradle/caches/*/plugin-resolution/
 cache:
   directories:
-    - "$HOME/.gradle/caches/"
-    - "$HOME/.gradle/wrapper/"
+  - "$HOME/.gradle/caches/"
+  - "$HOME/.gradle/wrapper/"
 env:
   global:
-    - APP_NAME=pleiepenger-joark
-    - DOCKER_IMG_NAME=navikt/pleiepenger-joark
-    - GITHUB_APP_ID=19726
-    - secure: UMaOtRlv7psQXBuygtEjMX6YII0JAKaj8/uCig1wEvTkfLdgB2vzQim7DaW5CCH0IQGG7MB/Dg48hwoo6FP9t2v7aBGXV8tg1j8tdWL1UOCm08F3eXSjm5K5OcKzkHjUHG6mwigRYPATEpDGrAmNEw0LMxoKE3q9ad54/zWr97MdZdh4JzuehlzGO2cwCs+x4OO/hdsrKVUDnmMj3rh/F9iKdfEOZ2kryOHIIhDFIzIm5TRUKF7AgVj1MyzSUKOmq63PfGUwmRcC3cgY6jmiLzcx1DA/YdRMxDwKEQFwJj7kcR2pvXKAM0t6mdliQqSUbhF889hBny0Qu/kZZ6P+OfmVy6CZ0/d5K42ldsyYL1eEIkKECHXBOgNp82GaXhE1ebvv4dedU+7G2y+Hr6PNkvVz9mICdfviSMaoFPBjBZTqNykGxpSTyiiHoXq5syHXjRLVOQfNFshynYO/wBWI7pK6bhpmx4eLDgPRGGnZwm5BQspiskecItmD8av75Y7xvJat8HRaWA4rG+OL0SyRm1yb6iY8iZGrq+zPbXDNrKIMaAUzYc1HMrnIgxxkWjqA5dkrq6vKl32yn6dxumpWReRhFWLSp3MdAvWTQHJ2NInDC84TFp5b+3o6btFNzshziyM46DKdHdRsoy5YhFGrjLmDqlw//ugn7jiAi0Pv9aM=
-    - secure: F5rrmOuxh8GP9iSV6dt4tzVN0V1I/BjcrFL0CvnAS7nYGIZflZwD22yJ5PRl7VeSuFIJA5UHR7Kep3affs2DXVdIiS+Ij/N5/fx1MvRCrTprs7EFzx1bjoWS0McOdAQIsFKMrV7//BuSRzX+N7JS9utXT6EOrM9H7SPP7vmwvjed11bhk7ntAvagnU0e/fZM8+PA4XKqT7BOG4roZZOYMA1mgCRX/KUNokvCVh8bFzSNmgAAAFTHUIAAhiJUcYG9yujShlPkwD9ZQFea9ApUNn0B/obJGwgxzMnNicDm7oh969UZqrz4dx6c4zc4Nzx8lRl0jYDZ4LtUKOa0HlMa4BRDdXQTcbstjKTlGPaRES5l+mLBm6byLNoRfbsuHEUG4FNT/vcVNTuszlVIe2+OmXu/4gASZ+kaI642v6GtohlgGz6KUib70nhitY31puRdPf+bRscAUt15SPmv7WWr6oTIBzU51AgyBTW5xZ41Jt1xgk4hfYdswue+zeGVQiX5Wd+onVFBf3TYhHblM35ft84t8XRShOqhZLgNPABKipuiBmwv+GYaddfuAXJ1V5eLrlegGqsgqBErahuTSACltcWyf1gIE1PgHt9+/Kbxbv1wbV1mFGbV5HHx7scXlSegZPR25proVHKlw6TEMwek8GBcDV0n2tsNcjauMH+Wyfc=
+  - APP_NAME=pleiepenger-joark
+  - DOCKER_IMG_NAME=navikt/pleiepenger-joark
+  - GITHUB_APP_ID=19726
+  - secure: CkDwyzLVyQNnNx+u34pzV4UtwSbNcUJtNu5oR3Z4e+VcwJn+ylzMIMduud4dE+hL88+GInT/mDTqIGhV62axdmatxF53kFhHZ2TpUpmWZh0GTNS/u8Ahax0izHA/QIUPybDYKfFfR8qqt2MQcvE1RzXzLFYKA8DWG14MaA3XKy5rsbl+DEx2Xmmo1VKCsjqGokGCYz/pfwOY0tiqSiGpa7FIwkE0N0rXfDNbSwQt4Dr9ITc3S5J7VBa3Yz//0h8llxdIkbDNaiGeg7ihbbfkvTAF8GQupxJ4XGh4PHgeTtZfOyT6XKhvBcz7ccnMMt8sFkp3srPcXEhNUHNCERghDf/2OB5Caj4JgkcGtNams29k5fQwpifNMDvYhpd2+WPnqSH7bVfnGudL9lx5kKDgYoMj5MczxR2VlnhDnZ6zV1OR2ubDTyMYIT25wDLoe+iTON/I7m/G687aubCgSiXQKAYKihKhvSM5Lsp/J6nmEtMOwzKqUnwQUNfOFNmWwmGpf7C4ondvRP8QcdWaOYA4benHDsCbwQT0ntlFvJMphRTOoTj2upmDwdu/iaoTPCcMn1y2yUVN6Ry/c7dfbmy7rJejzsvHUiPA3nS2hbandJlPfFAfBsB2r3QnPRj35Dj4Mf97YK8cOtr8izKQWHAIAEinRUWVMPAO7sjEKMqlO9Q=
+  - secure: zM+q7bnfg8AWjNvd5kfAGJOcUe8XUaZnStO/5Hx2vcvpjriw3CR3BOw5A9qg1f6PHxDqMxWsbNquqswCQ4i4p6rBtkR6AGRdCf+EwjbKrrMkHlEW57D2yyb369dmXmUqCczKpc5wHwv6v+dQqCPDdydW8HKgpGXMLxxNGEtzuEHRcsoYJlEd1rj0x60cypMieFlUWXVpMCWKe+LEQUwjB/kEVniqzJWxhLvKLVnNF8Meu6a/nEtr7fHKKwkXdl+o6TkTGbDHVtNsSdIYW21R3ma2c9ONFMcpM6SVRQK18Je1mmQ1xsPgMBD9W0GlfeE23RMMHKBaiIYbygHtcR2sv2s5P17i6FyItxt456ZZPpE3Y7Ri4ZVIjFsWc67CJizEwu/icMJqQVaNImJOdZUyjN9hEDSiyzJOjzWbnkYsq+S+xQ31ZBoPEo1YP1qb2AJRMiCVGWCd6ELIxZPhKgdGJ2bb2C6ZZYYljX/WOTmfUuH8Ui+b0tURH9sMdk912ECIloHbI/WnZpsctZtCRubbyZ/Y3cQ/ajl6yyPBKEn9wK9LYAAuFvWhPWwuSWktUTTb/eIVCX5yz7mbhk2IR+XNISuBN33ap5vrm+0/lKJ97FL/VnwRdH+DQzaJ5vWfgBoqbJWUMhPfIlo+l7jOSvh4se0e77Mtk0sVR9uqisRg3WY=
