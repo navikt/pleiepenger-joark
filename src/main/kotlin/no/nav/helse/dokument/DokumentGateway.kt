@@ -3,16 +3,13 @@ package no.nav.helse.dokument
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategy
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache.Apache
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.logging.Logging
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.header
-import io.ktor.client.request.url
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.kittinunf.fuel.core.Headers
+import com.github.kittinunf.fuel.core.ResponseResultOf
+import com.github.kittinunf.fuel.coroutines.awaitByteArrayResponseResult
+import com.github.kittinunf.fuel.httpGet
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import io.ktor.http.Url
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
@@ -20,73 +17,74 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import no.nav.helse.CorrelationId
 import no.nav.helse.dusseldorf.ktor.client.*
+import no.nav.helse.dusseldorf.ktor.metrics.Operation
+import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import no.nav.helse.journalforing.AktoerId
-import java.net.URL
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+import java.net.URI
 
 class DokumentGateway(
-    private val systemCredentialsProvider: SystemCredentialsProvider
+    private val accessTokenClient: CachedAccessTokenClient
 ) {
+    private val objectMapper = configuredObjectMapper()
 
-    private val monitoredHttpClient = MonitoredHttpClient(
-        source = "pleiepenger-joark",
-        destination = "pleiepenger-dokument",
-        overridePaths = mapOf(
-            Pair(Regex("/v1/dokument/.*"), "/dokument")
-        ),
-        httpClient = HttpClient(Apache) {
-            install(JsonFeature) {
-                serializer = JacksonSerializer { configureObjectMapper(this) }
-            }
-            engine {
-                customizeClient { setProxyRoutePlanner() }
-            }
-            install (Logging) {
-                sl4jLogger("pleiepenger-dokument")
-            }
-        }
-    )
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger("nav.DokumentGateway")
 
+    }
     suspend fun hentDokumenter(
-        urls : List<URL>,
+        urls : List<URI>,
         aktoerId: AktoerId,
         correlationId: CorrelationId) : List<Dokument> {
-        val authorizationHeader = systemCredentialsProvider.getAuthorizationHeader()
+        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
 
-        return coroutineScope {
-            val deferred = mutableListOf<Deferred<Dokument>>()
-            urls.forEach {
-                deferred.add(async {
-                    request(
-                        url = it,
-                        correlationId = correlationId,
-                        aktoerId = aktoerId,
-                        authorizationHeader = authorizationHeader
-                    )
+        val triplets = coroutineScope {
+            val futures = mutableListOf<Deferred<ResponseResultOf<ByteArray>>>()
+            urls.forEach { url ->
+                futures.add(async {
+                    hentDokument(url, aktoerId, authorizationHeader, correlationId)
                 })
             }
-            deferred.awaitAll()
+            futures.awaitAll()
+        }
+
+        return triplets.map { (request, _, result) ->
+            result.fold(
+                { success -> objectMapper.readValue<Dokument>(success)},
+                { error ->
+                    logger.error(error.toString())
+                    throw IllegalStateException("Feil ved henting av dokument '${request.url}'")
+                }
+            )
+        }
+
+    }
+
+    private suspend fun hentDokument(
+        url: URI,
+        aktoerId: AktoerId,
+        authorizationHeader: String,
+        correlationId: CorrelationId
+    ) : ResponseResultOf<ByteArray> {
+        val urlMedEier = Url.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", listOf(aktoerId.value))))
+        return Operation.monitored(
+            app = "pleiepenger-joark",
+            operation = "hente-dokument",
+            resultResolver = { 200 == it.second.statusCode}
+        ) {
+            urlMedEier.toString()
+                .httpGet()
+                .header(
+                    Headers.AUTHORIZATION to authorizationHeader,
+                    HttpHeaders.XCorrelationId to correlationId.id
+                )
+                .awaitByteArrayResponseResult()
         }
     }
 
-    private suspend fun request(
-        url : URL,
-        aktoerId: AktoerId,
-        correlationId: CorrelationId,
-        authorizationHeader : String) : Dokument {
-
-        val urlMedEier = Url.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", listOf(aktoerId.value))))
-        val httpRequest = HttpRequestBuilder()
-        httpRequest.header(HttpHeaders.XCorrelationId, correlationId.id)
-        httpRequest.header(HttpHeaders.Authorization, authorizationHeader)
-        httpRequest.method = HttpMethod.Get
-        httpRequest.url(urlMedEier)
-
-        return monitoredHttpClient.requestAndReceive(
-            httpRequestBuilder = httpRequest
-        )
-    }
-
-    private fun configureObjectMapper(objectMapper: ObjectMapper) : ObjectMapper {
+    private fun configuredObjectMapper() : ObjectMapper {
+        val objectMapper = jacksonObjectMapper()
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         objectMapper.propertyNamingStrategy = PropertyNamingStrategy.SNAKE_CASE
         return objectMapper

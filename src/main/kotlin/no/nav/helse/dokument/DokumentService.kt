@@ -6,7 +6,7 @@ import no.nav.helse.journalforing.AktoerId
 import no.nav.helse.journalforing.converter.Image2PDFConverter
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.URL
+import java.net.URI
 
 private val logger: Logger = LoggerFactory.getLogger("nav.DokumentService")
 
@@ -22,12 +22,12 @@ class DokumentService(
     private val contentTypeService: ContentTypeService
 ) {
 
-    suspend fun hentDokumenter(urls: List<URL>,
+    suspend fun hentDokumenter(urls: List<URI>,
                                aktoerId: AktoerId,
                                correlationId: CorrelationId): List<Dokument> {
         logger.trace("Henter ${urls.size} dokumenter.")
         val alleDokumenter = dokumentGateway.hentDokumenter(
-            urls =urls,
+            urls = urls,
             aktoerId = aktoerId,
             correlationId = correlationId
         )
@@ -47,7 +47,7 @@ class DokumentService(
         val supporterteDokumenter = applicationDokumenter.toMutableList()
 
         logger.trace("Gjør om de ${bildeDokumenter.size} bildene til PDF.")
-        bildeDokumenter.forEach { it ->
+        bildeDokumenter.forEach {
             supporterteDokumenter.add(
                 Dokument(
                     title = it.title,

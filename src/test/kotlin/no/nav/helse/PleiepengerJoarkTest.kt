@@ -20,7 +20,7 @@ import org.junit.BeforeClass
 import org.skyscreamer.jsonassert.JSONAssert
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.net.URL
+import java.net.URI
 import java.time.ZonedDateTime
 import kotlin.test.*
 
@@ -184,9 +184,17 @@ class PleiepengerJoarkTest {
 
         requestAndAssert(
             request = request,
-            expectedCode = HttpStatusCode.Unauthorized,
+            expectedCode = HttpStatusCode.Forbidden,
             accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized"),
-            expectedResponse = null
+            expectedResponse = """
+            {
+                "type": "/problem-details/unauthorized",
+                "title": "unauthorized",
+                "status": 403,
+                "detail": "Requesten inneholder ikke tilstrekkelige tilganger.",
+                "instance": "about:blank"
+            }
+            """.trimIndent()
         )
     }
 
@@ -203,27 +211,24 @@ class PleiepengerJoarkTest {
             request = request,
             expectedCode = HttpStatusCode.BadRequest,
             expectedResponse = """
-                {
-                    "type": "/problem-details/invalid-request-parameters",
-                    "title": "invalid-request-parameters",
-                    "detail": "Requesten inneholder ugyldige paramtere.",
-                    "status": 400,
-                    "instance": "about:blank",
-                    "invalid_parameters" : [
-                        {
-                            "name" : "aktoer_id",
-                            "reason" : "Ugyldig AktørID. Kan kun være siffer.",
-                            "type": "entity",
-                            "invalid_value": "$aktoerId"
-                        },
-                        {
-                            "name" : "dokument",
-                            "reason" : "Det må sendes minst ett dokument",
-                            "type": "entity",
-                            "invalid_value": []
-                        }
-                    ]
-                }
+            {
+                "type": "/problem-details/invalid-request-parameters",
+                "title": "invalid-request-parameters",
+                "status": 400,
+                "detail": "Requesten inneholder ugyldige paramtere.",
+                "instance": "about:blank",
+                "invalid_parameters": [{
+                    "type": "entity",
+                    "name": "dokument",
+                    "reason": "Det må sendes minst ett dokument",
+                    "invalid_value": []
+                }, {
+                    "type": "entity",
+                    "name": "aktoer_id",
+                    "reason": "Ugyldig AktørID. Kan kun være siffer.",
+                    "invalid_value": "123456F"
+                }]
+            }
             """.trimIndent()
         )
     }
@@ -264,9 +269,7 @@ class PleiepengerJoarkTest {
     }
 
 
-    private fun getDokumentUrl(dokumentId : String) : URL{
-        return URL("${wireMockServer.getPleiepengerDokumentUrl()}/$dokumentId")
-    }
+    private fun getDokumentUrl(dokumentId : String) = URI("${wireMockServer.getPleiepengerDokumentUrl()}/$dokumentId")
 
     private fun requestAndAssert(request : MeldingV1,
                                  expectedResponse : String?,
@@ -285,9 +288,11 @@ class PleiepengerJoarkTest {
                 addHeader(HttpHeaders.ContentType, "application/json")
                 setBody(objectMapper.writeValueAsString(request))
             }.apply {
+                logger.info("Response Entity = ${response.content}")
+                logger.info("Expected Entity = $expectedResponse")
                 assertEquals(expectedCode, response.status())
                 if (expectedResponse == null) assertEquals(expectedResponse, response.content)
-                else JSONAssert.assertEquals(expectedResponse, response.content!!, false)
+                else JSONAssert.assertEquals(expectedResponse, response.content!!, true)
             }
         }
     }

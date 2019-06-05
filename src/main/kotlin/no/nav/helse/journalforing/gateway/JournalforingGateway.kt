@@ -2,20 +2,19 @@ package no.nav.helse.journalforing.gateway
 
 import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.apache.Apache
-import io.ktor.client.features.json.JacksonSerializer
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.logging.Logging
-import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.request.header
-import io.ktor.client.request.url
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
+import com.github.kittinunf.fuel.core.Headers
+import com.github.kittinunf.fuel.coroutines.awaitStringResponseResult
+import com.github.kittinunf.fuel.httpPost
 import io.ktor.http.*
 import no.nav.helse.dusseldorf.ktor.client.*
+import no.nav.helse.dusseldorf.ktor.metrics.Operation
+import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.IllegalStateException
-import java.net.URL
+import java.net.URI
+import kotlin.IllegalStateException
 
 private val logger: Logger = LoggerFactory.getLogger("nav.JournalforingGateway")
 
@@ -24,50 +23,55 @@ private val logger: Logger = LoggerFactory.getLogger("nav.JournalforingGateway")
  */
 
 class JournalforingGateway(
-    baseUrl: URL,
-    private val systemCredentialsProvider: SystemCredentialsProvider
+    baseUrl: URI,
+    private val accessTokenClient: CachedAccessTokenClient
 ) {
-
-    private val monitoredHttpClient = MonitoredHttpClient(
-        source = "pleiepenger-joark",
-        destination = "dokmotinngaaende",
-        httpClient = HttpClient(Apache) {
-            install(JsonFeature) {
-                serializer = JacksonSerializer { configureObjectMapper(this) }
-            }
-            engine {
-                customizeClient { setProxyRoutePlanner() }
-            }
-            install (Logging) {
-                sl4jLogger("dokmotinngaaende")
-            }
-        }
-    )
 
     private val mottaInngaaendeForsendelseUrl = Url.buildURL(
         baseUrl = baseUrl,
         pathParts = listOf("rest", "mottaInngaaendeForsendelse")
-    )
+    ).toString()
 
+    private val objectMapper = configuredObjectMapper()
 
     internal suspend fun jorunalfor(request: JournalPostRequest) : JournalPostResponse {
-        val httpRequest = HttpRequestBuilder()
-        httpRequest.header(HttpHeaders.Authorization, systemCredentialsProvider.getAuthorizationHeader())
-        httpRequest.method = HttpMethod.Post
-        httpRequest.contentType(ContentType.Application.Json)
-        httpRequest.body = request
-        httpRequest.url(mottaInngaaendeForsendelseUrl)
+        val body = objectMapper.writeValueAsString(request)
+        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
 
-        val response = monitoredHttpClient.requestAndReceive<JournalPostResponse>(httpRequest)
+        val (_, _, result) = Operation.monitored(
+            app = "pleiepenger-joark",
+            operation = "opprette-journalpost",
+            resultResolver = { 200 == it.second.statusCode}
+        ) {
+            mottaInngaaendeForsendelseUrl
+                .httpPost()
+                .body(body)
+                .header(
+                    Headers.AUTHORIZATION to authorizationHeader,
+                    Headers.CONTENT_TYPE to "application/json",
+                    Headers.ACCEPT to "application/json"
+                )
+                .awaitStringResponseResult()
+        }
 
-        if (request.forsokEndeligJF && JournalTilstand.ENDELIG_JOURNALFOERT != journalTilstandFraString(response.journalTilstand)) {
-            throw IllegalStateException("Journalføring '$response' var forventet å bli endelig journalført, men ble det ikke..")
+
+        val journalPostResponse : JournalPostResponse = result.fold(
+            { success -> objectMapper.readValue(success) },
+            { error ->
+                logger.error(error.toString())
+                throw IllegalStateException("Feil ved opperttelse av jorunalpost.")
+            }
+        )
+
+        if (request.forsokEndeligJF && JournalTilstand.ENDELIG_JOURNALFOERT != journalTilstandFraString(journalPostResponse.journalTilstand)) {
+            throw IllegalStateException("Journalføring '$journalPostResponse' var forventet å bli endelig journalført, men ble det ikke..")
         } else {
-            return response
+            return journalPostResponse
         }
     }
 
-    private fun configureObjectMapper(objectMapper: ObjectMapper) : ObjectMapper {
+    private fun configuredObjectMapper() : ObjectMapper {
+        val objectMapper = jacksonObjectMapper()
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
         return objectMapper
     }
