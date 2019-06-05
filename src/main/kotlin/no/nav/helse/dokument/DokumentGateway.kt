@@ -76,6 +76,7 @@ class DokumentGateway(
             urlMedEier.toString()
                 .httpGet()
                 .header(
+                    Headers.ACCEPT to "application/json",
                     Headers.AUTHORIZATION to authorizationHeader,
                     HttpHeaders.XCorrelationId to correlationId.id
                 )
