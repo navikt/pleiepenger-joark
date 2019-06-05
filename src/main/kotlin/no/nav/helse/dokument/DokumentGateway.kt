@@ -7,7 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.fuel.core.Headers
 import com.github.kittinunf.fuel.core.ResponseResultOf
-import com.github.kittinunf.fuel.coroutines.awaitByteArrayResponseResult
+import com.github.kittinunf.fuel.coroutines.awaitStringResponseResult
 import com.github.kittinunf.fuel.httpGet
 import io.ktor.http.HttpHeaders
 import io.ktor.http.Url
@@ -40,7 +40,7 @@ class DokumentGateway(
         val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
 
         val triplets = coroutineScope {
-            val futures = mutableListOf<Deferred<ResponseResultOf<ByteArray>>>()
+            val futures = mutableListOf<Deferred<ResponseResultOf<String>>>()
             urls.forEach { url ->
                 futures.add(async {
                     hentDokument(url, aktoerId, authorizationHeader, correlationId)
@@ -66,7 +66,7 @@ class DokumentGateway(
         aktoerId: AktoerId,
         authorizationHeader: String,
         correlationId: CorrelationId
-    ) : ResponseResultOf<ByteArray> {
+    ) : ResponseResultOf<String> {
         val urlMedEier = Url.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", listOf(aktoerId.value))))
         return Operation.monitored(
             app = "pleiepenger-joark",
@@ -79,7 +79,7 @@ class DokumentGateway(
                     Headers.AUTHORIZATION to authorizationHeader,
                     HttpHeaders.XCorrelationId to correlationId.id
                 )
-                .awaitByteArrayResponseResult()
+                .awaitStringResponseResult()
         }
     }
 
