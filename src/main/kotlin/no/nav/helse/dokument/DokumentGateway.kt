@@ -68,19 +68,20 @@ class DokumentGateway(
         correlationId: CorrelationId
     ) : ResponseResultOf<String> {
         val urlMedEier = Url.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", listOf(aktoerId.value))))
+        val httpRequst = urlMedEier.toString()
+            .httpGet()
+            .header(
+                Headers.ACCEPT to "application/json",
+                Headers.AUTHORIZATION to authorizationHeader,
+                HttpHeaders.XCorrelationId to correlationId.id
+            )
+
         return Operation.monitored(
             app = "pleiepenger-joark",
             operation = "hente-dokument",
             resultResolver = { 200 == it.second.statusCode}
         ) {
-            urlMedEier.toString()
-                .httpGet()
-                .header(
-                    Headers.ACCEPT to "application/json",
-                    Headers.AUTHORIZATION to authorizationHeader,
-                    HttpHeaders.XCorrelationId to correlationId.id
-                )
-                .awaitStringResponseResult()
+            httpRequst.awaitStringResponseResult()
         }
     }
 

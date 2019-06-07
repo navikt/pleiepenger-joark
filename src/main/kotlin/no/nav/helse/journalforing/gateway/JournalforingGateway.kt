@@ -13,6 +13,7 @@ import no.nav.helse.dusseldorf.ktor.metrics.Operation
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.io.ByteArrayInputStream
 import java.net.URI
 import kotlin.IllegalStateException
 
@@ -35,25 +36,25 @@ class JournalforingGateway(
     private val objectMapper = configuredObjectMapper()
 
     internal suspend fun jorunalfor(request: JournalPostRequest) : JournalPostResponse {
-        val body = objectMapper.writeValueAsString(request)
+        val body = objectMapper.writeValueAsBytes(request)
+        val contentStream = { ByteArrayInputStream(body) }
         val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
+        val httpRequest = mottaInngaaendeForsendelseUrl
+            .httpPost()
+            .body(contentStream)
+            .header(
+                Headers.AUTHORIZATION to authorizationHeader,
+                Headers.CONTENT_TYPE to "application/json",
+                Headers.ACCEPT to "application/json"
+            )
 
         val (_, _, result) = Operation.monitored(
             app = "pleiepenger-joark",
             operation = "opprette-journalpost",
             resultResolver = { 200 == it.second.statusCode}
         ) {
-            mottaInngaaendeForsendelseUrl
-                .httpPost()
-                .body(body)
-                .header(
-                    Headers.AUTHORIZATION to authorizationHeader,
-                    Headers.CONTENT_TYPE to "application/json",
-                    Headers.ACCEPT to "application/json"
-                )
-                .awaitStringResponseResult()
+            httpRequest.awaitStringResponseResult()
         }
-
 
         val journalPostResponse : JournalPostResponse = result.fold(
             { success -> objectMapper.readValue(success) },
