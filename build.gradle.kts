@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.2.1.7e2de6f"
+val dusseldorfKtorVersion = "1.2.1.65ce328"
 val wiremockVersion = "2.19.0"
 val pdfBoxVersion = "2.0.15"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
@@ -11,7 +11,7 @@ plugins {
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/7e2de6fc3f7cc1a919d301e74f121a22619ba6d9/gradle/dusseldorf-ktor.gradle.kts")
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/65ce328364975f63e111891794b954b892001c76/gradle/dusseldorf-ktor.gradle.kts")
     dependencies {
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.31")
     }
