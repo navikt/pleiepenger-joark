@@ -4,7 +4,7 @@ import io.ktor.http.ContentType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-private val logger: Logger = LoggerFactory.getLogger("nav.ContentTypeService")
+private val logger: Logger = LoggerFactory.getLogger(ContentTypeService::class.java)
 
 class ContentTypeService {
     companion object {

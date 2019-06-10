@@ -17,7 +17,7 @@ import java.io.ByteArrayInputStream
 import java.net.URI
 import kotlin.IllegalStateException
 
-private val logger: Logger = LoggerFactory.getLogger("nav.JournalforingGateway")
+private val logger: Logger = LoggerFactory.getLogger(JournalforingGateway::class.java)
 
 /*
     https://dokmotinngaaende-q1.nais.preprod.local/rest/mottaInngaaendeForsendelse
@@ -36,9 +36,11 @@ class JournalforingGateway(
     private val objectMapper = configuredObjectMapper()
 
     internal suspend fun jorunalfor(request: JournalPostRequest) : JournalPostResponse {
+        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
+        logger.trace("Genererer body for request")
         val body = objectMapper.writeValueAsBytes(request)
         val contentStream = { ByteArrayInputStream(body) }
-        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
+        logger.trace("Generer http request")
         val httpRequest = mottaInngaaendeForsendelseUrl
             .httpPost()
             .body(contentStream)
@@ -48,6 +50,7 @@ class JournalforingGateway(
                 Headers.ACCEPT to "application/json"
             )
 
+        logger.trace("Sender reqeust")
         val (_, _, result) = Operation.monitored(
             app = "pleiepenger-joark",
             operation = "opprette-journalpost",
@@ -55,7 +58,7 @@ class JournalforingGateway(
         ) {
             httpRequest.awaitStringResponseResult()
         }
-
+        logger.trace("Håndterer response")
         val journalPostResponse : JournalPostResponse = result.fold(
             { success -> objectMapper.readValue(success) },
             { error ->

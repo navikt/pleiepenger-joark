@@ -30,7 +30,7 @@ class DokumentGateway(
     private val objectMapper = configuredObjectMapper()
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger("nav.DokumentGateway")
+        private val logger: Logger = LoggerFactory.getLogger(DokumentGateway::class.java)
 
     }
     suspend fun hentDokumenter(
@@ -39,6 +39,7 @@ class DokumentGateway(
         correlationId: CorrelationId) : List<Dokument> {
         val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
 
+        logger.trace("Henter dokumenter")
         val triplets = coroutineScope {
             val futures = mutableListOf<Deferred<ResponseResultOf<String>>>()
             urls.forEach { url ->
@@ -48,6 +49,7 @@ class DokumentGateway(
             }
             futures.awaitAll()
         }
+        logger.trace("Håndterer response")
 
         return triplets.map { (request, _, result) ->
             result.fold(

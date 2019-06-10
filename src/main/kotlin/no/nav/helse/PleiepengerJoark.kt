@@ -29,11 +29,7 @@ import no.nav.helse.journalforing.api.journalforingApis
 import no.nav.helse.journalforing.converter.Image2PDFConverter
 import no.nav.helse.journalforing.gateway.JournalforingGateway
 import no.nav.helse.journalforing.v1.JournalforingV1Service
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import java.net.URI
-
-private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoark")
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 

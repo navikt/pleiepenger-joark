@@ -15,7 +15,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import javax.imageio.ImageIO
 
-private val logger: Logger = LoggerFactory.getLogger("nav.ImageScaler")
+private val logger: Logger = LoggerFactory.getLogger(ImageScaler::class.java)
 private val A4_DIM = Dimension(PDRectangle.A4.width.toInt(), PDRectangle.A4.height.toInt())
 
 object ImageScaler {

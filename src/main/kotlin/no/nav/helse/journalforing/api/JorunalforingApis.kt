@@ -13,10 +13,6 @@ import io.ktor.routing.post
 import no.nav.helse.journalforing.v1.JournalforingV1Service
 import no.nav.helse.journalforing.v1.MeldingV1
 import no.nav.helse.journalforing.v1.MetadataV1
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-private val logger: Logger = LoggerFactory.getLogger("nav.journalforingApis")
 
 fun Route.journalforingApis(
     journalforingV1Service: JournalforingV1Service

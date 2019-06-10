@@ -8,7 +8,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
 
-private val logger: Logger = LoggerFactory.getLogger("nav.DokumentService")
+private val logger: Logger = LoggerFactory.getLogger(DokumentService::class.java)
 
 private val dokumentContentTypeCounter = Counter.build()
     .name("dokument_content_type_counter")

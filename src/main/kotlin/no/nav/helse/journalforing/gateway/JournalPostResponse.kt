@@ -3,7 +3,7 @@ package no.nav.helse.journalforing.gateway
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-private val logger: Logger = LoggerFactory.getLogger("nav.JournalPostResponse")
+private val logger: Logger = LoggerFactory.getLogger(JournalPostResponse::class.java)
 
 data class JournalPostResponse(
     val journalpostId: String,

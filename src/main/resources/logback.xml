@@ -9,7 +9,7 @@
     <logger name="nav" level="INFO"/>
     <logger name="no.nav" level="INFO"/>
     <logger name="io.ktor.auth.jwt" level="TRACE"/>
-    <logger name="no.nav.helse.dusseldorf.ktor.jackson.JacksonStatusPages" level="DEBUG"/>
+    <logger name="no.nav.helse.journalforing" level="TRACE"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT_JSON"/>

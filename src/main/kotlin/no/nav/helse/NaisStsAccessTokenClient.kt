@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory
 import java.net.URI
 import java.util.*
 
-private val logger: Logger = LoggerFactory.getLogger("nav.NaisStsAccessTokenClient")
+private val logger: Logger = LoggerFactory.getLogger(NaisStsAccessTokenClient::class.java)
 
 internal class NaisStsAccessTokenClient(
     tokenEndpoint: URI,

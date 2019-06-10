@@ -12,7 +12,7 @@ import no.nav.helse.journalforing.gateway.JournalforingGateway
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-private val logger: Logger = LoggerFactory.getLogger("nav.JournalforingV1Service")
+private val logger: Logger = LoggerFactory.getLogger(JournalforingV1Service::class.java)
 
 private val OMSORG_TEMA = Tema("OMS")
 private val NAV_NO_KANAL = Kanal("NAV_NO")

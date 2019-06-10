@@ -9,9 +9,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 
-
-private const val PDF = "application/pdf"
-private val logger: Logger = LoggerFactory.getLogger("nav.Image2PDFConverter")
+private val logger: Logger = LoggerFactory.getLogger(Image2PDFConverter::class.java)
 
 class Image2PDFConverter {
     fun convert(bytes: ByteArray, contentType: String): ByteArray {
