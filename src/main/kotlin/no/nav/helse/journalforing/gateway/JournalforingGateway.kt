@@ -17,8 +17,6 @@ import java.io.ByteArrayInputStream
 import java.net.URI
 import kotlin.IllegalStateException
 
-private val logger: Logger = LoggerFactory.getLogger(JournalforingGateway::class.java)
-
 /*
     https://dokmotinngaaende-q1.nais.preprod.local/rest/mottaInngaaendeForsendelse
  */
@@ -28,6 +26,10 @@ class JournalforingGateway(
     private val accessTokenClient: CachedAccessTokenClient
 ) {
 
+    private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(JournalforingGateway::class.java)
+    }
+
     private val mottaInngaaendeForsendelseUrl = Url.buildURL(
         baseUrl = baseUrl,
         pathParts = listOf("rest", "mottaInngaaendeForsendelse")
@@ -35,10 +37,10 @@ class JournalforingGateway(
 
     private val objectMapper = configuredObjectMapper()
 
-    internal suspend fun jorunalfor(request: JournalPostRequest) : JournalPostResponse {
+    internal suspend fun jorunalfor(journalPostRequest: JournalPostRequest) : JournalPostResponse {
         val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
         logger.trace("Genererer body for request")
-        val body = objectMapper.writeValueAsBytes(request)
+        val body = objectMapper.writeValueAsBytes(journalPostRequest)
         val contentStream = { ByteArrayInputStream(body) }
         logger.trace("Generer http request")
         val httpRequest = mottaInngaaendeForsendelseUrl
@@ -50,24 +52,24 @@ class JournalforingGateway(
                 Headers.ACCEPT to "application/json"
             )
 
-        logger.trace("Sender reqeust")
-        val (_, _, result) = Operation.monitored(
+        logger.trace("Sender request")
+        val (request, _, result) = Operation.monitored(
             app = "pleiepenger-joark",
             operation = "opprette-journalpost",
             resultResolver = { 200 == it.second.statusCode}
-        ) {
-            httpRequest.awaitStringResponseResult()
-        }
+        ) { httpRequest.awaitStringResponseResult() }
+
         logger.trace("Håndterer response")
         val journalPostResponse : JournalPostResponse = result.fold(
             { success -> objectMapper.readValue(success) },
             { error ->
+                logger.error("Error response = '${error.response.body().asString("text/plain")}' fra '${request.url}'")
                 logger.error(error.toString())
                 throw IllegalStateException("Feil ved opperttelse av jorunalpost.")
             }
         )
 
-        if (request.forsokEndeligJF && JournalTilstand.ENDELIG_JOURNALFOERT != journalTilstandFraString(journalPostResponse.journalTilstand)) {
+        if (journalPostRequest.forsokEndeligJF && JournalTilstand.ENDELIG_JOURNALFOERT != journalTilstandFraString(journalPostResponse.journalTilstand)) {
             throw IllegalStateException("Journalføring '$journalPostResponse' var forventet å bli endelig journalført, men ble det ikke..")
         } else {
             return journalPostResponse

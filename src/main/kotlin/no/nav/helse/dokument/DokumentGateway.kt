@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategy
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.github.kittinunf.fuel.core.Headers
-import com.github.kittinunf.fuel.core.ResponseResultOf
 import com.github.kittinunf.fuel.coroutines.awaitStringResponseResult
 import com.github.kittinunf.fuel.httpGet
 import io.ktor.http.HttpHeaders
@@ -17,12 +16,14 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import no.nav.helse.CorrelationId
 import no.nav.helse.dusseldorf.ktor.client.*
+import no.nav.helse.dusseldorf.ktor.core.Retry
 import no.nav.helse.dusseldorf.ktor.metrics.Operation
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import no.nav.helse.journalforing.AktoerId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.net.URI
+import java.time.Duration
 
 class DokumentGateway(
     private val accessTokenClient: CachedAccessTokenClient
@@ -31,7 +32,8 @@ class DokumentGateway(
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(DokumentGateway::class.java)
-
+        private const val HENTE_DOKUMENT_OPERATION = "hente-dokument"
+        private const val HENTE_ALLE_DOKUMENTER_OPERATION = "hente-alle-dokumenter"
     }
     suspend fun hentDokumenter(
         urls : List<URI>,
@@ -39,28 +41,20 @@ class DokumentGateway(
         correlationId: CorrelationId) : List<Dokument> {
         val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
 
-        logger.trace("Henter dokumenter")
-        val triplets = coroutineScope {
-            val futures = mutableListOf<Deferred<ResponseResultOf<String>>>()
-            urls.forEach { url ->
-                futures.add(async {
-                    hentDokument(url, aktoerId, authorizationHeader, correlationId)
-                })
-            }
-            futures.awaitAll()
-        }
-        logger.trace("Håndterer response")
-
-        return triplets.map { (request, _, result) ->
-            result.fold(
-                { success -> objectMapper.readValue<Dokument>(success)},
-                { error ->
-                    logger.error(error.toString())
-                    throw IllegalStateException("Feil ved henting av dokument '${request.url}'")
+        return Operation.monitored(
+            app = "pleiepenger-joark",
+            operation = HENTE_ALLE_DOKUMENTER_OPERATION
+        ) {
+            coroutineScope {
+                val futures = mutableListOf<Deferred<Dokument>>()
+                urls.forEach { url ->
+                    futures.add(async {
+                        hentDokument(url, aktoerId, authorizationHeader, correlationId)
+                    })
                 }
-            )
+                futures.awaitAll()
+            }
         }
-
     }
 
     private suspend fun hentDokument(
@@ -68,7 +62,7 @@ class DokumentGateway(
         aktoerId: AktoerId,
         authorizationHeader: String,
         correlationId: CorrelationId
-    ) : ResponseResultOf<String> {
+    ) : Dokument {
         val urlMedEier = Url.buildURL(baseUrl = url, queryParameters = mapOf(Pair("eier", listOf(aktoerId.value))))
         val httpRequst = urlMedEier.toString()
             .httpGet()
@@ -78,12 +72,25 @@ class DokumentGateway(
                 HttpHeaders.XCorrelationId to correlationId.id
             )
 
-        return Operation.monitored(
-            app = "pleiepenger-joark",
-            operation = "hente-dokument",
-            resultResolver = { 200 == it.second.statusCode}
+        return Retry.retry(
+            operation = HENTE_DOKUMENT_OPERATION,
+            initialDelay = Duration.ofMillis(200),
+            factor = 2.0
         ) {
-            httpRequst.awaitStringResponseResult()
+            val (request, _, result ) = Operation.monitored(
+                app = "pleiepenger-joark",
+                operation = HENTE_DOKUMENT_OPERATION,
+                resultResolver = { 200 == it.second.statusCode}
+            ) { httpRequst.awaitStringResponseResult() }
+
+            result.fold(
+                { success -> objectMapper.readValue<Dokument>(success)},
+                { error ->
+                    logger.error("Error response = '${error.response.body().asString("text/plain")}' fra '${request.url}'")
+                    logger.error(error.toString())
+                    throw IllegalStateException("Feil ved henting av dokument.")
+                }
+            )
         }
     }
 
