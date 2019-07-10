@@ -1,8 +1,6 @@
 # pleiepenger-joark
 
 Inneholder integrasjon mot joark for å opprette jornalpost i forbindelse med søknad om Pleiepenger.
-Skal konsumere fra kafka-topic og journalføre i Joark.
-Kan også sende samme request som kommer på kafka-topic som et REST API-kall til tjenesten.
 
 ## Versjon 1
 ### Meldingsformat
@@ -39,12 +37,6 @@ Request ID blir ikke propagert videre, og skal ha sitt opphav hos konsumenten
 - Request ID kan sendes som heder 'X-Request-ID'
 - Versjon på meldingen avledes fra pathen '/v1/journalforing' -> 1
 
-
-#### Kafka
-- Correlation ID må sendes som header til meldingen med navn 'X-Correlation-Id'
-- Request ID kan sendes som header til meldingen med navn 'X-Correlation-Id'
-- Versjon på meldingen må sendes som header til meldingen med navn 'X-Nav-Message-Version'
-
 ## For NAV-ansatte
 
-Interne henvendelser kan sendes via Slack i kanalen #område-helse.
+Interne henvendelser kan sendes via Slack i kanalen #team-düsseldorf
