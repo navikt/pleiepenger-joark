@@ -1,0 +1,56 @@
+apiVersion: "nais.io/v1alpha1"
+kind: "Application"
+metadata:
+  name: pleiepenger-joark
+  namespace: default
+  labels:
+    team: {{team}}
+spec:
+  image: {{version}}
+  port: 8080
+  liveness:
+    path: isalive
+    initialDelay: 20
+    timeout: 1
+    periodSeconds: 5
+    failureThreshold: 10
+  readiness:
+    path: isready
+    initialDelay: 20
+    timeout: 1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 1024Mi
+    requests:
+      cpu: 200m
+      memory: 512Mi
+  ingresses:
+    - https://pleiepenger-joark.nais.preprod.local
+  replicas:
+    min: 1
+    max: 1
+    cpuThresholdPercentage: 90
+  prometheus:
+    enabled: true
+    path: /metrics
+  vault:
+    enabled: true
+  webproxy: true
+  env:
+    - name: DOKMOTINNGAAENDE_BASE_URL
+      value: https://dokmotinngaaende-q1.nais.preprod.local
+    - name: TOKEN_URL
+      value: https://security-token-service.nais.preprod.local/rest/v1/sts/token
+    - name: JWKS_URL
+      value: https://security-token-service.nais.preprod.local/rest/v1/sts/jwks
+    - name: ISSUER
+      value: https://security-token-service.nais.preprod.local
+    - name: AZURE_V1_DISCOVERY_ENDPOINT
+      value: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/.well-known/openid-configuration
+    - name: AZURE_V2_DISCOVERY_ENDPOINT
+      value: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/v2.0/.well-known/openid-configuration
+    - name: AZURE_CLIENT_ID
+      value: b32ae17c-0276-4006-9507-4ef49e0e5e20
+    - name: AZURE_AUTHORIZED_CLIENTS
+      value: a6aef297-b9c9-4cac-82be-060d4fa68bb
