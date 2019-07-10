@@ -1,20 +1,19 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.2.1.65ce328"
+val dusseldorfKtorVersion = "1.2.2.8f413ad"
 val wiremockVersion = "2.19.0"
-val pdfBoxVersion = "2.0.15"
+val pdfBoxVersion = "2.0.16"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
 plugins {
-    kotlin("jvm") version "1.3.31"
+    kotlin("jvm") version "1.3.40"
+    id("com.github.johnrengelman.shadow") version "5.1.0"
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/65ce328364975f63e111891794b954b892001c76/gradle/dusseldorf-ktor.gradle.kts")
-    dependencies {
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.31")
-    }
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/8f413ad909a79e6f5e5897f43f009152ab2f0f35/gradle/dusseldorf-ktor.gradle.kts")
 }
 
 dependencies {
@@ -61,27 +60,18 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-tasks.named<KotlinCompile>("compileTestKotlin") {
-    kotlinOptions.jvmTarget = "1.8"
-}
-
-tasks.named<Jar>("jar") {
-    baseName = "app"
-
+tasks.withType<ShadowJar> {
+    archiveBaseName.set("app")
+    archiveClassifier.set("")
     manifest {
-        attributes["Main-Class"] = mainClass
-        attributes["Class-Path"] = configurations["compile"].map {
-            it.name
-        }.joinToString(separator = " ")
-    }
-
-    configurations["compile"].forEach {
-        val file = File("$buildDir/libs/${it.name}")
-        if (!file.exists())
-            it.copyTo(file)
+        attributes(
+            mapOf(
+                "Main-Class" to mainClass
+            )
+        )
     }
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "5.4.1"
+    gradleVersion = "5.5"
 }
