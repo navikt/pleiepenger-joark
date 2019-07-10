@@ -11,6 +11,7 @@ object Authorization {
             subject,
             issuer,
             "localhost",
+            JwtTokenGenerator.ACR,
             JwtTokenGenerator.EXPIRY
         )
 
