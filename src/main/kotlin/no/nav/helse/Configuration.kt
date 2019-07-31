@@ -4,14 +4,16 @@ import io.ktor.config.ApplicationConfig
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.dusseldorf.ktor.auth.*
 import no.nav.helse.dusseldorf.ktor.core.getOptionalList
+import no.nav.helse.dusseldorf.ktor.core.getRequiredList
 import no.nav.helse.dusseldorf.ktor.core.getRequiredString
 import java.net.URI
 
-private const val NAIS_STS_ALIAS = "nais-sts"
-
 @KtorExperimentalAPI
-data class Configuration(private val config : ApplicationConfig) {
-    private val clients = config.clients()
+internal data class Configuration(private val config : ApplicationConfig) {
+    companion object {
+        internal const val NAIS_STS_ALIAS = "nais-sts"
+        internal const val AZURE_V2_ALIAS = "azure-v2"
+    }
 
     private fun getAuthorizedSystemsForRestApi(): List<String> {
         return config.getOptionalList(
@@ -21,18 +23,22 @@ data class Configuration(private val config : ApplicationConfig) {
         )
     }
 
-    fun getDokmotinngaaendeBaseUrl() = URI(config.getRequiredString("nav.dokmotinngaaende_base_url", secret = false))
+    internal fun getDokmotinngaaendeBaseUrl() = URI(config.getRequiredString("nav.dokmotinngaaende_base_url", secret = false))
 
-    fun issuers(): Map<Issuer, Set<ClaimRule>> {
+    internal fun issuers(): Map<Issuer, Set<ClaimRule>> {
         return config.issuers().withAdditionalClaimRules(
-            mapOf(NAIS_STS_ALIAS to setOf(StandardClaimRules.Companion.EnforceSubjectOneOf(getAuthorizedSystemsForRestApi().toSet())))
+            mapOf(
+                NAIS_STS_ALIAS to setOf(
+                    StandardClaimRules.Companion.EnforceSubjectOneOf(
+                        getAuthorizedSystemsForRestApi().toSet()
+                    )
+                )
+            )
         )
     }
 
-    fun naisStsClient() : ClientSecretClient  {
-        val client = clients.getOrElse(NAIS_STS_ALIAS) {
-            throw IllegalStateException("Client[$NAIS_STS_ALIAS] må være satt opp.")
-        }
-        return client as ClientSecretClient
-    }
+    internal fun clients() = config.clients()
+
+    internal fun getOppretteJournalpostScopes() = config.getRequiredList("nav.auth.scopes.opprette-journalpost", secret = false, builder = { it }).toSet()
+    internal fun getHenteDokumentScopes() = config.getRequiredList("nav.auth.scopes.hente-dokument", secret = false, builder = { it }).toSet()
 }

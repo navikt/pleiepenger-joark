@@ -9,6 +9,9 @@ import com.github.kittinunf.fuel.coroutines.awaitStringResponseResult
 import com.github.kittinunf.fuel.httpPost
 import io.ktor.http.*
 import no.nav.helse.dusseldorf.ktor.client.*
+import no.nav.helse.dusseldorf.ktor.health.HealthCheck
+import no.nav.helse.dusseldorf.ktor.health.Healthy
+import no.nav.helse.dusseldorf.ktor.health.Result
 import no.nav.helse.dusseldorf.ktor.metrics.Operation
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import org.slf4j.Logger
@@ -23,8 +26,12 @@ import kotlin.IllegalStateException
 
 class JournalforingGateway(
     baseUrl: URI,
-    private val accessTokenClient: CachedAccessTokenClient
-) {
+    private val accessTokenClient: CachedAccessTokenClient,
+    private val oppretteJournalPostScopes : Set<String>
+) : HealthCheck {
+    override suspend fun check(): Result {
+        return Healthy("JournalforingGateway", "ok") // TODO
+    }
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(JournalforingGateway::class.java)

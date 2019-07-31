@@ -17,6 +17,9 @@ import kotlinx.coroutines.coroutineScope
 import no.nav.helse.CorrelationId
 import no.nav.helse.dusseldorf.ktor.client.*
 import no.nav.helse.dusseldorf.ktor.core.Retry
+import no.nav.helse.dusseldorf.ktor.health.HealthCheck
+import no.nav.helse.dusseldorf.ktor.health.Healthy
+import no.nav.helse.dusseldorf.ktor.health.Result
 import no.nav.helse.dusseldorf.ktor.metrics.Operation
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import no.nav.helse.journalforing.AktoerId
@@ -26,9 +29,14 @@ import java.net.URI
 import java.time.Duration
 
 class DokumentGateway(
-    private val accessTokenClient: CachedAccessTokenClient
-) {
+    private val accessTokenClient: CachedAccessTokenClient,
+    private val henteDokumentScopes: Set<String>
+) : HealthCheck {
     private val objectMapper = configuredObjectMapper()
+
+    override suspend fun check(): Result {
+        return Healthy("DokumentGateway", "ok") // TODO
+    }
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(DokumentGateway::class.java)
