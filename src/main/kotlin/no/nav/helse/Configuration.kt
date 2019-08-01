@@ -15,9 +15,9 @@ internal data class Configuration(private val config : ApplicationConfig) {
         internal const val AZURE_V2_ALIAS = "azure-v2"
     }
 
-    private fun getAuthorizedSystemsForRestApi(): List<String> {
+    private fun getNaisStsAuthorizedClients(): List<String> {
         return config.getOptionalList(
-            key = "nav.rest_api.authorized_systems",
+            key = "nav.auth.nais-sts.authorized_clients",
             builder = { value -> value },
             secret = false
         )
@@ -30,7 +30,7 @@ internal data class Configuration(private val config : ApplicationConfig) {
             mapOf(
                 NAIS_STS_ALIAS to setOf(
                     StandardClaimRules.Companion.EnforceSubjectOneOf(
-                        getAuthorizedSystemsForRestApi().toSet()
+                        getNaisStsAuthorizedClients().toSet()
                     )
                 )
             )

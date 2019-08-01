@@ -47,10 +47,10 @@ class DokumentGateway(
     override suspend fun check(): Result {
         return try {
             accessTokenClient.getAccessToken(henteDokumentScopes)
-            Healthy("JournalforingGateway", "Henting av access token for henting av dokumen OK.")
+            Healthy("DokumentGateway", "Henting av access token for henting av dokument OK.")
         } catch (cause: Throwable) {
-            logger.error("Feil ved henting av access token for opprettelse ac journalpost", cause)
-            UnHealthy("JournalforingGateway", "Henting av access token for henting av dokument Feilet.")
+            logger.error("Feil ved henting av access token for henting av dokument", cause)
+            UnHealthy("DokumentGateway", "Henting av access token for henting av dokument Feilet.")
         }
     }
 

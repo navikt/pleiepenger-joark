@@ -1,5 +1,6 @@
 package no.nav.helse
 
+import no.nav.helse.dusseldorf.ktor.core.fromResources
 import no.nav.helse.journalforing.converter.ImageScaler
 import java.io.File
 import java.util.*
@@ -21,7 +22,7 @@ class Image2PdfConverterTest {
         format : String = "jpeg",
         name : String
     ) {
-        val image = ImageScaler.downToA4(resourceName.fromResources(), format)
+        val image = ImageScaler.downToA4(resourceName.fromResources().readBytes(), format)
         val path = "${System.getProperty("user.dir")}/scaled-image-$name-${UUID.randomUUID()}.$format"
         val file = File(path)
         file.writeBytes(image)

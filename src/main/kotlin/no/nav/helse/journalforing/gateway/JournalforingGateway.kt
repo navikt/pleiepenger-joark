@@ -50,13 +50,14 @@ class JournalforingGateway(
             accessTokenClient.getAccessToken(oppretteJournalPostScopes)
             Healthy("JournalforingGateway", "Henting av access token for opprettelse av journalpost OK.")
         } catch (cause: Throwable) {
-            logger.error("Feil ved henting av access token for opprettelse ac journalpost", cause)
+            logger.error("Feil ved henting av access token for opprettelse av journalpost", cause)
             UnHealthy("JournalforingGateway", "Henting av access token for opprettelse av journalpost Feilet.")
         }
     }
 
     internal suspend fun jorunalfor(journalPostRequest: JournalPostRequest) : JournalPostResponse {
         val authorizationHeader = cachedAccessTokenClient.getAccessToken(oppretteJournalPostScopes).asAuthoriationHeader()
+
         logger.trace("Genererer body for request")
         val body = objectMapper.writeValueAsBytes(journalPostRequest)
         val contentStream = { ByteArrayInputStream(body) }
