@@ -12,7 +12,9 @@ import no.nav.helse.dusseldorf.ktor.client.*
 import no.nav.helse.dusseldorf.ktor.health.HealthCheck
 import no.nav.helse.dusseldorf.ktor.health.Healthy
 import no.nav.helse.dusseldorf.ktor.health.Result
+import no.nav.helse.dusseldorf.ktor.health.UnHealthy
 import no.nav.helse.dusseldorf.ktor.metrics.Operation
+import no.nav.helse.dusseldorf.oauth2.client.AccessTokenClient
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -26,12 +28,9 @@ import kotlin.IllegalStateException
 
 class JournalforingGateway(
     baseUrl: URI,
-    private val accessTokenClient: CachedAccessTokenClient,
+    private val accessTokenClient: AccessTokenClient,
     private val oppretteJournalPostScopes : Set<String>
 ) : HealthCheck {
-    override suspend fun check(): Result {
-        return Healthy("JournalforingGateway", "ok") // TODO
-    }
 
     private companion object {
         private val logger: Logger = LoggerFactory.getLogger(JournalforingGateway::class.java)
@@ -42,10 +41,22 @@ class JournalforingGateway(
         pathParts = listOf("rest", "mottaInngaaendeForsendelse")
     ).toString()
 
+    private val cachedAccessTokenClient = CachedAccessTokenClient(accessTokenClient)
     private val objectMapper = configuredObjectMapper()
 
+
+    override suspend fun check(): Result {
+        return try {
+            accessTokenClient.getAccessToken(oppretteJournalPostScopes)
+            Healthy("JournalforingGateway", "Henting av access token for opprettelse av journalpost OK.")
+        } catch (cause: Throwable) {
+            logger.error("Feil ved henting av access token for opprettelse ac journalpost", cause)
+            UnHealthy("JournalforingGateway", "Henting av access token for opprettelse av journalpost Feilet.")
+        }
+    }
+
     internal suspend fun jorunalfor(journalPostRequest: JournalPostRequest) : JournalPostResponse {
-        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
+        val authorizationHeader = cachedAccessTokenClient.getAccessToken(oppretteJournalPostScopes).asAuthoriationHeader()
         logger.trace("Genererer body for request")
         val body = objectMapper.writeValueAsBytes(journalPostRequest)
         val contentStream = { ByteArrayInputStream(body) }

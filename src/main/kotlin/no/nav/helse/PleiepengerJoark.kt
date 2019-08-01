@@ -59,17 +59,15 @@ fun Application.pleiepengerJoark() {
     val accessTokenClientResolver = AccessTokenClientResolver(
         clients = configuration.clients()
     )
-    val joarkAccessTokenClient = accessTokenClientResolver.joark()
-    val pleiepengerDokumentAccessTokenClient = accessTokenClientResolver.pleiepengerDokument()
 
     val journalforingGateway = JournalforingGateway(
         baseUrl = configuration.getDokmotinngaaendeBaseUrl(),
-        accessTokenClient = joarkAccessTokenClient,
+        accessTokenClient = accessTokenClientResolver.joark(),
         oppretteJournalPostScopes = configuration.getOppretteJournalpostScopes()
     )
 
     val dokumentGateway = DokumentGateway(
-        accessTokenClient = pleiepengerDokumentAccessTokenClient,
+        accessTokenClient = accessTokenClientResolver.pleiepengerDokument(),
         henteDokumentScopes = configuration.getHenteDokumentScopes()
     )
 

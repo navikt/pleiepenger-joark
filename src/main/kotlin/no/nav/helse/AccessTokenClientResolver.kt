@@ -19,16 +19,16 @@ internal class AccessTokenClientResolver(
         private val logger: Logger = LoggerFactory.getLogger(AccessTokenClientResolver::class.java)
     }
 
-    private val naisSts : CachedAccessTokenClient
-    private val pleiepengerDokument : CachedAccessTokenClient
+    private val naisSts : AccessTokenClient
+    private val pleiepengerDokument : AccessTokenClient
 
     init {
         val naisStsClient = naisStsClient()
-        naisSts = CachedAccessTokenClient(NaisStsAccessTokenClient(
+        naisSts = NaisStsAccessTokenClient(
             clientId = naisStsClient.clientId(),
             clientSecret = naisStsClient.clientSecret,
             tokenEndpoint = naisStsClient.tokenEndpoint()
-        ))
+        )
 
         val azureV2Client = azureV2Client()
         pleiepengerDokument = if (azureV2Client == null) {
@@ -36,12 +36,12 @@ internal class AccessTokenClientResolver(
             naisSts
         } else {
             logger.info("Bruker Client[$AZURE_V2_ALIAS] ved kommunikasjon med pleiepenger-dokument")
-            CachedAccessTokenClient(SignedJwtAccessTokenClient(
+            SignedJwtAccessTokenClient(
                 clientId = azureV2Client.clientId(),
                 tokenEndpoint = azureV2Client.tokenEndpoint(),
                 privateKeyProvider = FromJwk(azureV2Client.privateKeyJwk),
                 keyIdProvider = DirectKeyId(azureV2Client.certificateHexThumbprint)
-            ))
+            )
         }
     }
 
