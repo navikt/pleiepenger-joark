@@ -52,3 +52,5 @@ spec:
       value: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/.well-known/openid-configuration
     - name: AZURE_V2_DISCOVERY_ENDPOINT
       value: https://login.microsoftonline.com/966ac572-f5b7-4bbe-aa88-c76419c0f851/v2.0/.well-known/openid-configuration
+    - name: HENTE_DOKUMENT_SCOPES
+      value: 97f0b1bc-6aa9-4d44-a3c7-60b4318fbec4/.default

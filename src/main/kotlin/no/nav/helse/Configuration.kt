@@ -15,6 +15,8 @@ internal data class Configuration(private val config : ApplicationConfig) {
         internal const val AZURE_V2_ALIAS = "azure-v2"
     }
 
+    private val clients = config.clients()
+
     private fun getNaisStsAuthorizedClients(): List<String> {
         return config.getOptionalList(
             key = "nav.auth.nais-sts.authorized_clients",
@@ -37,8 +39,13 @@ internal data class Configuration(private val config : ApplicationConfig) {
         )
     }
 
-    internal fun clients() = config.clients()
+    internal fun clients() = clients
+    private fun azureClientConfigured() = clients().containsKey(AZURE_V2_ALIAS)
 
     internal fun getOppretteJournalpostScopes() = config.getRequiredList("nav.auth.scopes.opprette-journalpost", secret = false, builder = { it }).toSet()
-    internal fun getHenteDokumentScopes() = config.getRequiredList("nav.auth.scopes.hente-dokument", secret = false, builder = { it }).toSet()
+
+    internal fun getHenteDokumentScopes() : Set<String> {
+        return if (azureClientConfigured()) config.getRequiredList("nav.auth.scopes.hente-dokument", secret = false, builder = { it }).toSet()
+        else setOf("openid")
+    }
 }
