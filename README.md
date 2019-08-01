@@ -1,5 +1,7 @@
 # pleiepenger-joark
 
+[![CircleCI](https://circleci.com/gh/navikt/pleiepenger-joark/tree/master.svg?style=svg)](https://circleci.com/gh/navikt/pleiepenger-joark/tree/master)
+
 Inneholder integrasjon mot joark for å opprette jornalpost i forbindelse med søknad om Pleiepenger.
 
 ## Versjon 1
@@ -37,6 +39,7 @@ Request ID blir ikke propagert videre, og skal ha sitt opphav hos konsumenten
 - Request ID kan sendes som heder 'X-Request-ID'
 - Versjon på meldingen avledes fra pathen '/v1/journalforing' -> 1
 
-## For NAV-ansatte
+## Henvendelser
+Spørsmål knyttet til koden eller prosjektet kan stilles som issues her på GitHub.
 
-Interne henvendelser kan sendes via Slack i kanalen #team-düsseldorf
+Interne henvendelser kan sendes via Slack i kanalen #team-düsseldorf.
