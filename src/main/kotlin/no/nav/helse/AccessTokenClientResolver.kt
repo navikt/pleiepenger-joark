@@ -40,7 +40,7 @@ internal class AccessTokenClientResolver(
                 clientId = azureV2Client.clientId(),
                 tokenEndpoint = azureV2Client.tokenEndpoint(),
                 privateKeyProvider = FromJwk(azureV2Client.privateKeyJwk),
-                keyIdProvider = DirectKeyId(azureV2Client.certificateHexThumbprint)
+                keyIdProvider = FromCertificateHexThumbprint(azureV2Client.certificateHexThumbprint)
             )
         }
     }
