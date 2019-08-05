@@ -2,17 +2,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.2.2.1f50120"
+val dusseldorfKtorVersion = "1.2.3.5379667"
 val pdfBoxVersion = "2.0.16"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
 plugins {
-    kotlin("jvm") version "1.3.40"
+    kotlin("jvm") version "1.3.41"
     id("com.github.johnrengelman.shadow") version "5.1.0"
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/fb2a0af320bfbba5e457e22f272a2f7e20038c35/gradle/dusseldorf-ktor.gradle.kts")
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/53796676e0d12719558795ed05fc6cd672c3a8ac/gradle/dusseldorf-ktor.gradle.kts")
 }
 
 dependencies {
@@ -33,7 +33,6 @@ dependencies {
     // Test
     testCompile ( "no.nav.helse:dusseldorf-ktor-test-support:$dusseldorfKtorVersion")
 
-    testCompile("no.nav.security:oidc-test-support:0.2.18")
     testCompile("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")
     }
