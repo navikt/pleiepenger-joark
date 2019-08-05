@@ -17,7 +17,12 @@ import kotlinx.coroutines.coroutineScope
 import no.nav.helse.CorrelationId
 import no.nav.helse.dusseldorf.ktor.client.*
 import no.nav.helse.dusseldorf.ktor.core.Retry
+import no.nav.helse.dusseldorf.ktor.health.HealthCheck
+import no.nav.helse.dusseldorf.ktor.health.Healthy
+import no.nav.helse.dusseldorf.ktor.health.Result
+import no.nav.helse.dusseldorf.ktor.health.UnHealthy
 import no.nav.helse.dusseldorf.ktor.metrics.Operation
+import no.nav.helse.dusseldorf.oauth2.client.AccessTokenClient
 import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import no.nav.helse.journalforing.AktoerId
 import org.slf4j.Logger
@@ -26,8 +31,9 @@ import java.net.URI
 import java.time.Duration
 
 class DokumentGateway(
-    private val accessTokenClient: CachedAccessTokenClient
-) {
+    private val accessTokenClient: AccessTokenClient,
+    private val henteDokumentScopes: Set<String>
+) : HealthCheck {
     private val objectMapper = configuredObjectMapper()
 
     private companion object {
@@ -35,11 +41,24 @@ class DokumentGateway(
         private const val HENTE_DOKUMENT_OPERATION = "hente-dokument"
         private const val HENTE_ALLE_DOKUMENTER_OPERATION = "hente-alle-dokumenter"
     }
+
+    private val cachedAccessTokenClient = CachedAccessTokenClient(accessTokenClient)
+
+    override suspend fun check(): Result {
+        return try {
+            accessTokenClient.getAccessToken(henteDokumentScopes)
+            Healthy("DokumentGateway", "Henting av access token for henting av dokument OK.")
+        } catch (cause: Throwable) {
+            logger.error("Feil ved henting av access token for henting av dokument", cause)
+            UnHealthy("DokumentGateway", "Henting av access token for henting av dokument Feilet.")
+        }
+    }
+
     suspend fun hentDokumenter(
         urls : List<URI>,
         aktoerId: AktoerId,
         correlationId: CorrelationId) : List<Dokument> {
-        val authorizationHeader = accessTokenClient.getAccessToken(setOf("openid")).asAuthoriationHeader()
+        val authorizationHeader = cachedAccessTokenClient.getAccessToken(henteDokumentScopes).asAuthoriationHeader()
 
         return Operation.monitored(
             app = "pleiepenger-joark",

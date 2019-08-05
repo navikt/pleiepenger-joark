@@ -14,6 +14,8 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
+import no.nav.helse.dusseldorf.ktor.testsupport.jws.NaisSts
+import no.nav.helse.dusseldorf.ktor.testsupport.wiremock.WireMockBuilder
 import no.nav.helse.journalforing.v1.MeldingV1
 import org.junit.AfterClass
 import org.junit.BeforeClass
@@ -32,13 +34,23 @@ class PleiepengerJoarkTest {
     @KtorExperimentalAPI
     private companion object {
 
-        private val wireMockServer: WireMockServer = WiremockWrapper.bootstrap()
+        private val wireMockServer: WireMockServer = WireMockBuilder()
+            .withNaisStsSupport()
+            .withAzureSupport()
+            .build()
+            .stubGetDokument()
+            .stubDomotInngaaendeIsReady()
+
         private val objectMapper = jacksonObjectMapper().dusseldorfConfigured()
-        private val authorizedAccessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), wireMockServer.getSubject())
+        private val authorizedAccessToken = NaisSts.generateJwt(application = "srvpps-prosessering")
 
         fun getConfig() : ApplicationConfig {
             val fileConfig = ConfigFactory.load()
-            val testConfig = ConfigFactory.parseMap(TestConfiguration.asMap(wireMockServer = wireMockServer))
+            val testConfig = ConfigFactory.parseMap(TestConfiguration.asMap(
+                wireMockServer = wireMockServer,
+                naisStsAuthoriedClients = setOf("srvpps-prosessering"),
+                azureAuthorizedClients = setOf("srvpps-prosessering-azure")
+            ))
             val mergedConfig = testConfig.withFallback(fileConfig)
 
             return HoconApplicationConfig(mergedConfig)
@@ -85,11 +97,11 @@ class PleiepengerJoarkTest {
     fun `gyldig melding til joark gir ok response med journalfoert jorunalpostID`() {
         val jpegDokumentId = "1234" // Default mocket som JPEG
         val pdfDokumentId = "4567"
-        WiremockWrapper.stubGetDokumentPdf(pdfDokumentId)
+        stubGetDokumentPdf(pdfDokumentId)
         val jsonDokumentId = "78910"
-        WiremockWrapper.stubGetDokumentJson(jsonDokumentId)
+        stubGetDokumentJson(jsonDokumentId)
 
-        WiremockWrapper.stubMottaInngaaendeForsendelseOk(tilstand = "MIDLERTIDIG_JOURNALFOERT")
+        stubMottaInngaaendeForsendelseOk(tilstand = "MIDLERTIDIG_JOURNALFOERT")
 
         val request = MeldingV1(
             aktoerId = "1234",
@@ -185,7 +197,7 @@ class PleiepengerJoarkTest {
         requestAndAssert(
             request = request,
             expectedCode = HttpStatusCode.Forbidden,
-            accessToken = Authorization.getAccessToken(wireMockServer.baseUrl(), "srvnotauthorized"),
+            accessToken = NaisSts.generateJwt(application = "srvnotauthorized"),
             expectedResponse = """
             {
                 "type": "/problem-details/unauthorized",

@@ -2,18 +2,17 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 val ktorVersion = ext.get("ktorVersion").toString()
-val dusseldorfKtorVersion = "1.2.2.8f413ad"
-val wiremockVersion = "2.19.0"
+val dusseldorfKtorVersion = "1.2.3.5379667"
 val pdfBoxVersion = "2.0.16"
 val mainClass = "no.nav.helse.PleiepengerJoarkKt"
 
 plugins {
-    kotlin("jvm") version "1.3.40"
+    kotlin("jvm") version "1.3.41"
     id("com.github.johnrengelman.shadow") version "5.1.0"
 }
 
 buildscript {
-    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/8f413ad909a79e6f5e5897f43f009152ab2f0f35/gradle/dusseldorf-ktor.gradle.kts")
+    apply("https://raw.githubusercontent.com/navikt/dusseldorf-ktor/53796676e0d12719558795ed05fc6cd672c3a8ac/gradle/dusseldorf-ktor.gradle.kts")
 }
 
 dependencies {
@@ -32,8 +31,8 @@ dependencies {
     compile("org.apache.pdfbox:pdfbox:$pdfBoxVersion")
 
     // Test
-    testCompile ("com.github.tomakehurst:wiremock:$wiremockVersion")
-    testCompile("no.nav.security:oidc-test-support:0.2.18")
+    testCompile ( "no.nav.helse:dusseldorf-ktor-test-support:$dusseldorfKtorVersion")
+
     testCompile("io.ktor:ktor-server-test-host:$ktorVersion") {
         exclude(group = "org.eclipse.jetty")
     }
@@ -74,5 +73,5 @@ tasks.withType<ShadowJar> {
 }
 
 tasks.withType<Wrapper> {
-    gradleVersion = "5.5"
+    gradleVersion = "5.5.1"
 }

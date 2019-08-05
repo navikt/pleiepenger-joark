@@ -19,12 +19,10 @@ import no.nav.helse.dusseldorf.ktor.client.*
 import no.nav.helse.dusseldorf.ktor.core.*
 import no.nav.helse.dusseldorf.ktor.health.HealthRoute
 import no.nav.helse.dusseldorf.ktor.health.HealthService
-import no.nav.helse.dusseldorf.ktor.health.TryCatchHealthCheck
 import no.nav.helse.dusseldorf.ktor.jackson.JacksonStatusPages
 import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
 import no.nav.helse.dusseldorf.ktor.metrics.MetricsRoute
 import no.nav.helse.dusseldorf.ktor.metrics.init
-import no.nav.helse.dusseldorf.oauth2.client.CachedAccessTokenClient
 import no.nav.helse.journalforing.api.journalforingApis
 import no.nav.helse.journalforing.converter.Image2PDFConverter
 import no.nav.helse.journalforing.gateway.JournalforingGateway
@@ -58,29 +56,24 @@ fun Application.pleiepengerJoark() {
         AuthStatusPages()
     }
 
-    val naisStsClient = configuration.naisStsClient()
-    val naisStsAccessTokenClient = NaisStsAccessTokenClient(
-        clientId = naisStsClient.clientId(),
-        clientSecret = naisStsClient.clientSecret,
-        tokenEndpoint = naisStsClient.tokenEndpoint()
+    val accessTokenClientResolver = AccessTokenClientResolver(
+        clients = configuration.clients()
     )
-    val cachedNaisStsAccessTokenClient = CachedAccessTokenClient(naisStsAccessTokenClient)
 
     val journalforingGateway = JournalforingGateway(
         baseUrl = configuration.getDokmotinngaaendeBaseUrl(),
-        accessTokenClient = cachedNaisStsAccessTokenClient
+        accessTokenClient = accessTokenClientResolver.joark(),
+        oppretteJournalPostScopes = configuration.getOppretteJournalpostScopes()
     )
 
     val dokumentGateway = DokumentGateway(
-        accessTokenClient = cachedNaisStsAccessTokenClient
+        accessTokenClient = accessTokenClientResolver.pleiepengerDokument(),
+        henteDokumentScopes = configuration.getHenteDokumentScopes()
     )
 
     val healthService = HealthService(setOf(
-        TryCatchHealthCheck(
-            name = "NaisStsAccessTokenHealthCheck"
-        ) {
-            naisStsAccessTokenClient.getAccessToken(setOf("openid"))
-        },
+        journalforingGateway,
+        dokumentGateway,
         HttpRequestHealthCheck(
             urlConfigMap = issuers.healthCheckMap(mutableMapOf(
                 Url.buildURL(baseUrl = configuration.getDokmotinngaaendeBaseUrl(), pathParts = listOf("isReady")) to HttpRequestHealthConfig(expectedStatus = HttpStatusCode.OK)

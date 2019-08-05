@@ -36,12 +36,21 @@ spec:
     path: /metrics
   vault:
     enabled: true
+  webproxy: true
   env:
     - name: DOKMOTINNGAAENDE_BASE_URL
       value: https://dokmotinngaaende.nais.adeo.no
-    - name: TOKEN_URL
-      value: http://security-token-service/rest/v1/sts/token
-    - name: JWKS_URL
-      value: http://security-token-service/rest/v1/sts/jwks
-    - name: ISSUER
-      value: https://security-token-service.nais.adeo.no
+    - name: NAIS_STS_DISCOVERY_ENDPOINT
+      value: https://security-token-service.nais.adeo.no/rest/v1/sts/.well-known/openid-configuration
+    - name: NAIS_STS_AUTHORIZED_CLIENTS
+      value: srvpps-prosessering
+    - name: AZURE_CLIENT_ID
+      value: cb751642-883c-48d3-9f82-06cc72c3e4b9
+    - name: AZURE_AUTHORIZED_CLIENTS
+      value: 84ef0905-64b3-440b-8f6a-0d88ef81a0f0
+    - name: AZURE_V1_DISCOVERY_ENDPOINT
+      value: https://login.microsoftonline.com/62366534-1ec3-4962-8869-9b5535279d0b/.well-known/openid-configuration
+    - name: AZURE_V2_DISCOVERY_ENDPOINT
+      value: https://login.microsoftonline.com/62366534-1ec3-4962-8869-9b5535279d0b/v2.0/.well-known/openid-configuration
+    - name: HENTE_DOKUMENT_SCOPES
+      value: 0c5a6709-ba2a-42b7-bbfc-9b9f844e2ee2/.default
