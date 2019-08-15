@@ -3,7 +3,6 @@ package no.nav.helse
 import io.ktor.config.ApplicationConfig
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.dusseldorf.ktor.auth.*
-import no.nav.helse.dusseldorf.ktor.core.getOptionalList
 import no.nav.helse.dusseldorf.ktor.core.getRequiredList
 import no.nav.helse.dusseldorf.ktor.core.getRequiredString
 import java.net.URI
@@ -17,29 +16,12 @@ internal data class Configuration(private val config : ApplicationConfig) {
 
     private val clients = config.clients()
 
-    private fun getNaisStsAuthorizedClients(): List<String> {
-        return config.getOptionalList(
-            key = "nav.auth.nais-sts.authorized_clients",
-            builder = { value -> value },
-            secret = false
-        )
-    }
-
     internal fun getDokmotinngaaendeBaseUrl() = URI(config.getRequiredString("nav.dokmotinngaaende_base_url", secret = false))
 
-    internal fun issuers(): Map<Issuer, Set<ClaimRule>> {
-        return config.issuers().withAdditionalClaimRules(
-            mapOf(
-                NAIS_STS_ALIAS to setOf(
-                    StandardClaimRules.Companion.EnforceSubjectOneOf(
-                        getNaisStsAuthorizedClients().toSet()
-                    )
-                )
-            )
-        )
-    }
+    internal fun issuers() = config.issuers().withoutAdditionalClaimRules()
 
     internal fun clients() = clients
+
     private fun azureClientConfigured() = clients().containsKey(AZURE_V2_ALIAS)
 
     internal fun getOppretteJournalpostScopes() = config.getRequiredList("nav.auth.scopes.opprette-journalpost", secret = false, builder = { it }).toSet()

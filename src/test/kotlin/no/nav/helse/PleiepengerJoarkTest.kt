@@ -14,6 +14,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.setBody
 import io.ktor.util.KtorExperimentalAPI
 import no.nav.helse.dusseldorf.ktor.jackson.dusseldorfConfigured
+import no.nav.helse.dusseldorf.ktor.testsupport.jws.Azure
 import no.nav.helse.dusseldorf.ktor.testsupport.jws.NaisSts
 import no.nav.helse.dusseldorf.ktor.testsupport.wiremock.WireMockBuilder
 import no.nav.helse.journalforing.v1.MeldingV1
@@ -26,13 +27,12 @@ import java.net.URI
 import java.time.ZonedDateTime
 import kotlin.test.*
 
-private val logger: Logger = LoggerFactory.getLogger("nav.PleiepengerJoarkTest")
-
 @KtorExperimentalAPI
 class PleiepengerJoarkTest {
 
     @KtorExperimentalAPI
     private companion object {
+        private val logger: Logger = LoggerFactory.getLogger(PleiepengerJoarkTest::class.java)
 
         private val wireMockServer: WireMockServer = WireMockBuilder()
             .withNaisStsSupport()
@@ -42,14 +42,14 @@ class PleiepengerJoarkTest {
             .stubDomotInngaaendeIsReady()
 
         private val objectMapper = jacksonObjectMapper().dusseldorfConfigured()
-        private val authorizedAccessToken = NaisSts.generateJwt(application = "srvpps-prosessering")
+        private val authorizedAccessToken = Azure.V1_0.generateJwt(clientId = "pleiepengesoknad-prosessering", audience = "pleiepenger-joark")
 
         fun getConfig() : ApplicationConfig {
             val fileConfig = ConfigFactory.load()
             val testConfig = ConfigFactory.parseMap(TestConfiguration.asMap(
                 wireMockServer = wireMockServer,
-                naisStsAuthoriedClients = setOf("srvpps-prosessering"),
-                azureAuthorizedClients = setOf("srvpps-prosessering-azure")
+                azureAuthorizedClients = setOf("pleiepengesoknad-prosessering"),
+                pleiepengerJoarkAzureClientId = "pleiepenger-joark"
             ))
             val mergedConfig = testConfig.withFallback(fileConfig)
 
@@ -197,7 +197,7 @@ class PleiepengerJoarkTest {
         requestAndAssert(
             request = request,
             expectedCode = HttpStatusCode.Forbidden,
-            accessToken = NaisSts.generateJwt(application = "srvnotauthorized"),
+            accessToken = Azure.V1_0.generateJwt(clientId = "pleiepengesoknad-prosessering", audience = "feil-audience"),
             expectedResponse = """
             {
                 "type": "/problem-details/unauthorized",

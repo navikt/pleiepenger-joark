@@ -42,8 +42,6 @@ spec:
       value: https://dokmotinngaaende.nais.adeo.no
     - name: NAIS_STS_DISCOVERY_ENDPOINT
       value: https://security-token-service.nais.adeo.no/rest/v1/sts/.well-known/openid-configuration
-    - name: NAIS_STS_AUTHORIZED_CLIENTS
-      value: srvpps-prosessering
     - name: AZURE_CLIENT_ID
       value: cb751642-883c-48d3-9f82-06cc72c3e4b9
     - name: AZURE_AUTHORIZED_CLIENTS
