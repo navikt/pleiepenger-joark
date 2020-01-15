@@ -21,10 +21,10 @@ spec:
   resources:
     limits:
       cpu: 2000m
-      memory: 1024Mi
+      memory: 2048Mi
     requests:
       cpu: 200m
-      memory: 512Mi
+      memory: 1024Mi
   ingresses:
     - https://pleiepenger-joark.nais.adeo.no
   replicas:
